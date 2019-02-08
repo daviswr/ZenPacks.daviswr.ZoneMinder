@@ -1,0 +1,276 @@
+name: ZenPacks.daviswr.ZoneMinder
+
+class_relationships:
+  - Products.ZenModel.Device.Device(zoneMinders) 1:MC ZoneMinder(server)
+  - ZoneMinder(zmMonitors) 1:MC ZMMonitor(zoneMinder)
+  - ZoneMinder(zmServers) 1:MC ZMServer(zoneMinder)
+  - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
+
+classes:
+  DEFAULTS:
+    base: [zenpacklib.Component]
+
+  ZoneMinder:
+    label: Zone Minder
+    plural_label: Zone Minder
+    relationships:
+      zmServers:
+        grid_display: false
+    properties:
+      DEFAULTS:
+        type: string
+        grid_display: false
+      version:
+        label: Version
+        grid_display: true
+        order: 2
+      apiversion:
+        label: API Version
+      # What the effective current version of ZoneMinder is,
+      # might be different from actual if versions ignored
+      ZmDynCurrVersion:
+        label: Effective Version
+      # What the version of the database is, from zmupdate
+      ZmDynDbVersion:
+        label: Database Version
+      # The email address to send matching event details to
+      ZmEmailAddress:
+        label: Email Address
+      # The email address to send matching event details to
+      ZmMessageAddress:
+        label: Message Address
+      # The email address you wish your event notifications to originate from
+      ZmFromEmail:
+        label: From Email Address
+      # The host address of your SMTP mail server
+      ZmEmailHost:
+        label: Email Host
+        default: localhost
+      # Is the ffmpeg video encoder/decoder installed
+      ZmOptFfmpeg:
+        label: FFMPEG Support
+        short_label: FFMPEG
+        type: boolean
+        default: false
+        enum: {true: "clear", false: "debug"}
+        renderer: Zenoss.render.severity
+        grid_display: true
+        details_display: false
+      # Path to (optional) ffmpeg mpeg encoder
+      ZmPathFfmpeg:
+        label: FFMPEG Path
+      # Formats to allow for ffmpeg video generation
+      ZmFfmpegFormats:
+        label: FFMPEG Formats
+        default: mpg mpeg wmv asf avi* mov swf 3gp**
+      # Maximum number of log entries to retain
+      ZmLogDatabaseLimit:
+        label: Log Database Limit
+        default: 7 day
+      # Path to the various logs that the ZoneMinder daemons generate
+      ZmPathLogs:
+        label: Log Path
+        default: /var/log/zm
+      # enables a frame server daemon (zmf)
+      # which will be sent the images from the analysis daemon
+      ZmOptFrameServer:
+        label: Frame Server
+        short_label: ZMF
+        type: boolean
+        default: false
+        enum: {true: "clear", false: "debug"}
+        renderer: Zenoss.render.severity
+        grid_display: true
+        details_display: false
+      
+
+  ZMMonitor:
+    label: Zone Minder Monitor
+    short_label: ZM Monitor
+    properties:
+      DEFAULTS:
+        type: string
+        grid_display: false
+      ServerId:
+        label: Server ID
+        type: int
+        default: 0
+      MonitorType:
+        label: Type
+        grid_display: true
+      Function:
+        label: Function
+        grid_display: true
+      Enabled:
+        type: boolean
+        default: false
+        enum: {true: "clear", false: "critical"}
+        renderer: Zenoss.render.severity
+        grid_display: true
+        details_display: false
+        order: 2
+      Protocol:
+        label: Protocol
+        order: 6
+      Method:
+        label: Method
+        order: 7
+      Host:
+        # Will have to remove passwords
+        grid_display: true
+        order: 3
+      Port:
+        type: int
+        order: 4
+      Path:
+        # Will have to remove passwords from URL
+        # May have to assemble with Host and Port depending on format
+        label: URL
+        order: 5
+      Resolution:
+        # Assembled from Width and Height attributes
+        details_display: true
+        order: 6
+      Width:
+        type: int
+        details_display: false
+      Height:
+        type: int
+        details_display: false
+      Controllable:
+        label: PTZ Controls
+        type: boolean
+        default: false
+      ControlId:
+        # Look up in controls.json
+        label: PTZ Type
+      AnalysisFPS:
+        label: Analysis FPS
+        type: float
+      MaxFPS:
+        label: Max FPS
+        type: float
+      AlarmMaxFPS:
+        label: Alarm Max FPS
+        type: float
+      
+
+  # Different classes required for different monitor protocol health checks
+  ZMHttpMonitor:
+    base: [ZMMonitor]
+    label: Zone Minder HTTP Monitor
+    short_label: ZM HTTP Monitor
+
+  ZMRtspMonitor:
+    base: [ZMMonitor]
+    label: Zone Minder RTSP Monitor
+    short_label: ZM RTSP Monitor
+
+  ZMHttpRtspMonitor:
+    base: [ZMMonitor]
+    label: Zone Minder HTTP-RSTP Monitor
+    short_label: ZM HTTP-RSTP Monitor
+
+  ZMIgnoredMonitor:
+    base: [ZMMonitor]
+    label: Zone Minder Unmonitored Monitor
+    short_label: ZM Unmonitored Monitor
+
+
+  ZMServer:
+    label: Zone Monitor Server
+    short_label: ZM Server
+    properties:
+      DEFAULTS:
+        grid_display: false 
+      Hostname:
+        type: string
+        grid_display: true
+        order: 2
+      State_Id:
+        label: State ID
+        type: int
+        default: 0
+        details_display: false
+      Status:
+        # Will need a way to dynamically update this
+        type: string
+        details_display: false
+      CpuLoad:
+        label: CPU Load
+        type: float
+        default: 0.0
+        #datapoint:
+      TotalMem:
+        label: Total Memory
+        type: int
+        renderer: Zenoss.render.bytesString
+        default: 0
+      FreeMem:
+        label: Free Memory
+        type: int
+        renderer: Zenoss.render.bytesString
+        default: 0
+        #datapoint:
+      TotalSwap:
+        label: Total Swap Space
+        type: int
+        renderer: Zenoss.render.bytesString
+        default: 0
+      FreeSwap:
+        label: Free Swap Space
+        type: int
+        renderer: Zenoss.render.bytesString
+        default: 0
+        #datapoint:
+      zmstats:
+        label: Stats
+        type: boolean
+        default: false
+      zmaudit:
+        label: Audit
+        type: boolean
+        default: false
+      zmtrigger:
+        label: Trigger
+        type: boolean
+        default: false
+
+  ZMStorage:
+    label: Zone Minder Storage
+    short_label: ZM Storage
+    plural_label: Zone Minder Storage
+    plural_short_label: ZM Storage
+    properties:
+      DEFAULTS:
+        type: string
+        grid_display: false
+        details_display: true
+      Path:
+        label: Path
+        grid_display: true
+        order: 2
+      StorageType:
+        label: Type
+        order: 3
+      Url:
+        label: URL
+        order: 4
+      DiskSpace:
+        label: Disk Space
+        type: int
+        renderer: Zenoss.render.bytesString
+        grid_display: true
+        order: 5
+      Scheme:
+        label: Scheme
+        order: 6
+      ServerId:
+        label: Server ID
+        type: int
+        default: 0
+        order: 7
+      DoDelete:
+        label: Do-Delete
+        type: boolean
+        order: 8
