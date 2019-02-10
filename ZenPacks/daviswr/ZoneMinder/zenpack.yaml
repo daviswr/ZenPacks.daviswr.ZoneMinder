@@ -1,7 +1,7 @@
 name: ZenPacks.daviswr.ZoneMinder
 
 class_relationships:
-  - Products.ZenModel.Device.Device(zoneMinders) 1:MC ZoneMinder(server)
+  - Products.ZenModel.Device.Device(zoneMinder) 1:MC ZoneMinder(server)
   - ZoneMinder(zmMonitors) 1:MC ZMMonitor(zoneMinder)
   - ZoneMinder(zmServers) 1:MC ZMServer(zoneMinder)
   - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
@@ -274,3 +274,30 @@ classes:
         label: Do-Delete
         type: boolean
         order: 8
+
+
+zProperties:
+  DEFAULTS:
+    category: ZoneMinder
+  zZoneMinderUsername:
+    type: string
+  zZoneMinderPassword:
+    type: password
+  zZoneMinderHostname:
+    type: string
+  zZoneMinderPort:
+    type: int
+    default: 443
+  zZoneMinderPath:
+    type: string
+    default: /zm/
+  zZoneMinderSSL:
+    type: boolean
+    default: true
+  zZoneMinderURL:
+    type: string
+
+
+#device_classes:
+#  /:
+#    remove: false
