@@ -11,11 +11,17 @@ classes:
     base: [zenpacklib.Component]
 
   ZoneMinder:
-    label: Zone Minder
-    plural_label: Zone Minder
+    label: ZoneMinder Daemon
+    plural_label: ZoneMinder Daemon
+    short_label: ZM Daemon
+    plural_short_label: ZM Daemon
     relationships:
       zmServers:
         grid_display: false
+        details_display: false
+      zmStorage:
+        grid_display: false
+        details_display: false
     properties:
       DEFAULTS:
         type: string
@@ -26,51 +32,64 @@ classes:
         order: 2
       apiversion:
         label: API Version
+        order: 13
       # What the effective current version of ZoneMinder is,
       # might be different from actual if versions ignored
       ZmDynCurrVersion:
         label: Effective Version
+        order: 11
       # What the version of the database is, from zmupdate
       ZmDynDbVersion:
         label: Database Version
+        order: 12
       # The email address to send matching event details to
       ZmEmailAddress:
         label: Email Address
+        order: 14
       # The email address to send matching event details to
       ZmMessageAddress:
         label: Message Address
+        order: 15
       # The email address you wish your event notifications to originate from
       ZmFromEmail:
         label: From Email Address
+        order: 16
       # The host address of your SMTP mail server
       ZmEmailHost:
         label: Email Host
         default: localhost
+        order: 17
       # Is the ffmpeg video encoder/decoder installed
       ZmOptFfmpeg:
-        label: FFMPEG Support
-        short_label: FFMPEG
+        label: FFmpeg Support
+        short_label: FFmpeg
         type: boolean
         default: false
         enum: {true: "clear", false: "debug"}
         renderer: Zenoss.render.severity
         grid_display: true
         details_display: false
+        label_width: 45
+        order: 3
       # Path to (optional) ffmpeg mpeg encoder
       ZmPathFfmpeg:
-        label: FFMPEG Path
+        label: FFmpeg Path
+        order: 18
       # Formats to allow for ffmpeg video generation
       ZmFfmpegFormats:
-        label: FFMPEG Formats
-        default: mpg mpeg wmv asf avi* mov swf 3gp**
+        label: FFmpeg Formats
+        default: mpg mpeg wmv asf avi mov swf 3gp
+        order: 19
       # Maximum number of log entries to retain
       ZmLogDatabaseLimit:
         label: Log Database Limit
         default: 7 day
+        order: 21
       # Path to the various logs that the ZoneMinder daemons generate
       ZmPathLogs:
         label: Log Path
         default: /var/log/zm
+        order: 20
       # enables a frame server daemon (zmf)
       # which will be sent the images from the analysis daemon
       ZmOptFrameServer:
@@ -82,11 +101,17 @@ classes:
         renderer: Zenoss.render.severity
         grid_display: true
         details_display: false
+        label_width: 35
+        order: 4
       
 
   ZMMonitor:
-    label: Zone Minder Monitor
-    short_label: ZM Monitor
+    label: ZoneMinder Monitor
+    short_label: Monitor
+    relationships:
+      zoneMinder:
+        grid_display: false
+        details_display: false
     properties:
       DEFAULTS:
         type: string
@@ -158,27 +183,22 @@ classes:
   # Different classes required for different monitor protocol health checks
   ZMHttpMonitor:
     base: [ZMMonitor]
-    label: Zone Minder HTTP Monitor
-    short_label: ZM HTTP Monitor
+    label: ZoneMinder HTTP Monitor
+    short_label: HTTP Monitor
 
   ZMRtspMonitor:
     base: [ZMMonitor]
-    label: Zone Minder RTSP Monitor
-    short_label: ZM RTSP Monitor
+    label: ZoneMinder RTSP Monitor
+    short_label: RTSP Monitor
 
   ZMHttpRtspMonitor:
     base: [ZMMonitor]
-    label: Zone Minder HTTP-RSTP Monitor
-    short_label: ZM HTTP-RSTP Monitor
-
-  ZMIgnoredMonitor:
-    base: [ZMMonitor]
-    label: Zone Minder Unmonitored Monitor
-    short_label: ZM Unmonitored Monitor
+    label: ZoneMinder HTTP-RSTP Monitor
+    short_label: HTTP-RSTP Monitor
 
 
   ZMServer:
-    label: Zone Monitor Server
+    label: ZoneMinder Server
     short_label: ZM Server
     properties:
       DEFAULTS:
@@ -237,9 +257,9 @@ classes:
         default: false
 
   ZMStorage:
-    label: Zone Minder Storage
+    label: ZoneMinder Storage
     short_label: ZM Storage
-    plural_label: Zone Minder Storage
+    plural_label: ZoneMinder Storage
     plural_short_label: ZM Storage
     properties:
       DEFAULTS:

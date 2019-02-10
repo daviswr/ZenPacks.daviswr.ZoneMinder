@@ -1,26 +1,22 @@
 """ Models the ZoneMinder daemon """
 
-# stdlib Imports
 import json
 import re
 import urllib
 
-# Twisted Imports
 from twisted.internet.defer \
     import inlineCallbacks, returnValue
 from twisted.web.client \
     import getPage
 
-# Zenoss Imports
 from Products.DataCollector.plugins.CollectorPlugin \
     import PythonPlugin
+from Products.DataCollector.plugins.DataMaps \
+    import MultiArgs, RelationshipMap, ObjectMap
 
 
 class ZoneMinder(PythonPlugin):
     """ZoneMinder daemon modeler plugin"""
-
-    relname = 'zoneMinder'
-    modname = 'ZenPacks.daviswr.ZoneMinder.ZoneMinder'
 
     requiredProperties = (
         'zZoneMinderUsername',
@@ -53,7 +49,9 @@ class ZoneMinder(PythonPlugin):
         if not base_url:
             hostname = getattr(device, 'zZoneMinderHostname', '')
             if not hostname:
-                hostname = device.id.replace('_', '.') or device.manageIp
+                hostname = device.id or device.manageIp
+                if '.' not in hostname:
+                    hostname = hostname.replace('_', '.')
             log.debug('%s: ZoneMinder host is %s', device.id, str(hostname))
             port = getattr(device, 'zZoneMinderPort', 443)
             path = getattr(device, 'zZoneMinderPath', '/zm/')
@@ -85,47 +83,66 @@ class ZoneMinder(PythonPlugin):
             'password': password,
             })
         login_url = b'{0}index.php?{1}'.format(base_url, login_params)
-        log.debug('%s: ZoneMinder login URL %s', device.id, login_url)
+        # Password will be visible in log output
+        #log.debug('%s: ZoneMinder login URL %s', device.id, login_url)
 
         cookies = dict()
         # Attempt login
         try:
             response = yield getPage(login_url, method='POST', cookies=cookies)
-        except Exception, e:
-            log.error('%s: %s', device.id, e)
-            returnValue(None)
 
-        if 'Invalid username or password' in response:
-            log.error(
-                '%s: ZoneMinder login credentials invalid',
-                device.id
-                )
-            returnValue(None)
+            if 'Invalid username or password' in response:
+                log.error(
+                    '%s: ZoneMinder login credentials invalid',
+                    device.id
+                    )
+                returnValue(None)
 
-        log.debug('%s: ZoneMinder cookies\n%s', device.id, cookies)
+            log.debug('%s: ZoneMinder cookies\n%s', device.id, cookies)
 
-        output = dict()
-        output['url'] = base_url
-        # Get versions
-        try:
+            output = dict()
+            output['url'] = base_url
+
+            # Versions
             response = yield getPage(
                 api_url + 'host/getVersion.json',
                 method='GET',
                 cookies=cookies
                 )
-            output['versions'] = json.loads(response)
-        except Exception, e:
-            log.error('%s: %s', device.id, e)
-            returnValue(None)
+            output.update(json.loads(response))
 
-        # Get config
-        try:
+            # Config
             response = yield getPage(
                 api_url + 'configs.json',
                 method='GET',
                 cookies=cookies
                 )
-            output['config'] = json.loads(response)
+            output.update(json.loads(response))
+
+            # Monitors
+            response = yield getPage(
+                api_url + 'monitors.json',
+                method='GET',
+                cookies=cookies
+                )
+            output.update(json.loads(response))
+
+            # Monitor PTZ Types
+            response = yield getPage(
+                api_url + 'controls.json',
+                method='GET',
+                cookies=cookies
+                )
+            output.update(json.loads(response))
+
+            # Servers
+            response = yield getPage(
+                api_url + 'servers.json',
+                method='GET',
+                cookies=cookies
+                )
+            output.update(json.loads(response))
+
         except Exception, e:
             log.error('%s: %s', device.id, e)
             returnValue(None)
@@ -135,22 +152,110 @@ class ZoneMinder(PythonPlugin):
     def process(self, device, results, log):
         """Process results. Return iterable of datamaps or None."""
 
-        data = dict()
+        maps = list()
+
+        # ZoneMinder daemon (getVersion.json & configs.json)
+        daemon = dict()
+
         # Expecting results to be a dict
-        if 'versions' in results:
-            for key in results['versions']:
-                data[key] = results['versions'][key]
+        for key in ['version', 'apiversion']:
+            daemon[key] = results.get(key)
 
-        if 'config' in results:
-            for param in results['config']['configs']:
-                key = param['Config']['Name'].title().replace('_', '')
-                value = param['Config']['Value']
-                data[key] = value
+        for item in results.get('configs', list()):
+            config = item['Config']
+            key = config['Name'].title().replace('_', '')
+            value = config['Value']
+            daemon[key] = value
 
-        data['id'] = self.prepId('ZoneMinder')
-        data['title'] = results['url']
-        rm = self.relMap()
-        rm.append(self.objectMap(data))
+        booleans = ['ZmOptFfmpeg', 'ZmOptFrameServer']
+        for key in booleans:
+            daemon[key] = True if daemon[key] == '1' else False
 
-        log.debug('%s ZoneMinder relmap:\n%s', device.id, rm)
-        return rm
+        daemon['id'] = self.prepId('ZoneMinder')
+        daemon['title'] = results['url']
+
+        rm = RelationshipMap(
+            relname='zoneMinder',
+            modname='ZenPacks.daviswr.ZoneMinder.ZoneMinder'
+            )
+        rm.append(ObjectMap(
+            modname='ZenPacks.daviswr.ZoneMinder.ZoneMinder',
+            data=daemon
+            ))
+        log.debug('%s ZoneMinder daemon:\n%s', device.id, rm)
+        maps.append(rm)
+
+        # Monitors
+        monitors = list()
+        rm = RelationshipMap(
+            compname='zoneMinder/ZoneMinder',
+            relname='zmMonitors',
+            modname='ZenPacks.daviswr.ZoneMinder.ZMMonitor'
+            )
+
+        ptz = dict()
+        for item in results.get('controls', list()):
+            control = item['Control']
+            key = control['Id']
+            value = '{0} {1}'.format(control['Name'], control['Type'])
+            ptz[key] = value
+
+        for item in results.get('monitors', list()):
+            monitor = item['Monitor']
+            monitor_name = monitor.get('Name') \
+                or monitor.get('Id') \
+                or monitor.get('Sequence')
+            monitor['id'] = self.prepId('zmMonitor_{0}'.format(
+                monitor_name
+                ))
+            monitor['title'] = monitor_name
+            monitor['MonitorType'] = monitor.get('Type')
+            if 'Ffmpeg' == monitor['MonitorType']:
+                monitor['MonitorType'] = 'FFmpeg'
+
+            integers = [
+                'ServerId',
+                'Port',
+                'Width',
+                'Height',
+                ]
+
+            for key in integers:
+                monitor[key] = int(monitor.get(key, 0))
+
+            monitor['Resolution'] = '{0}x{1}'.format(
+                monitor['Width'],
+                monitor['Height']
+                )
+
+            floats = [
+                'AnalysisFPS',
+                'MaxFPS',
+                'AlarmMaxFPS',
+                ]
+
+            for key in floats:
+                monitor[key] = float(monitor.get(key, 0.0))
+
+            booleans = [
+                'Enabled',
+                'Controllable',
+                ]
+
+            for key in booleans:
+                monitor[key] = True if monitor.get(key, '0') == '1' else False
+
+            if (monitor['Controllable']
+                    and monitor.get('ControlId', '0') != '0'):
+                monitor['ControlId'] = ptz.get(monitor['ControlId'])
+            else:
+                monitor['ControlId'] = 'None'
+
+            rm.append(ObjectMap(
+                modname='ZenPacks.daviswr.ZoneMinder.ZMMonitor',
+                data=monitor
+                ))
+            log.debug('%s ZoneMinder monitor:\n%s', device.id, rm)
+        maps.append(rm)
+
+        return maps
