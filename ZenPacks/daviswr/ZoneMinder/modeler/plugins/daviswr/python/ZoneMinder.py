@@ -252,15 +252,6 @@ class ZoneMinder(PythonPlugin):
             # Invert the dictionary
             port_protocol = dict(map(reversed, protocol_port.items()))
 
-            if port:
-                if (not protocol
-                        or protocol != port_protocol.get(port, protocol)):
-                    protocol = port_protocol.get(port, protocol)
-                    log.debug('%s: Fixing protocol: %s', device.id, protocol)
-            elif protocol:
-                port = protocol_port.get(protocol, port)
-                log.debug('%s: Fixing port: %s', device.id, port)
-
             if not path_url_match:
                 path = '{0}://{1}:{2}{3}'.format(
                     protocol,
@@ -269,6 +260,23 @@ class ZoneMinder(PythonPlugin):
                     url_path
                     )
                 log.debug('%s: Assembled URL %s', device.id, path)
+
+                if port:
+                    if (not protocol
+                            or protocol != port_protocol.get(port, protocol)):
+                        protocol = port_protocol.get(port, protocol)
+                        log.debug(
+                            '%s: Fixing protocol: %s',
+                            device.id,
+                            protocol
+                            )
+                elif protocol:
+                    port = protocol_port.get(protocol, port)
+                    log.debug('%s: Fixing port: %s', device.id, port)
+
+            # Getting protocol from the full URL path
+            elif port != protocol_port.get(protocol, port):
+                port = protocol_port.get(protocol, port)
 
             url_password_regex = r'(\S+)passw?o?r?d?=[^_&?]+[_&?](\S+)'
             url_password_match = re.match(url_password_regex, path)
