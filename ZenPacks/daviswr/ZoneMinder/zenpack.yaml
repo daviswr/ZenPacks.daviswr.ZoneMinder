@@ -120,12 +120,14 @@ classes:
         label: Server ID
         type: int
         default: 0
+        details_display: false
       MonitorType:
         label: Type
         grid_display: true
+        order : 9
       Function:
-        label: Function
         grid_display: true
+        order: 8
       Enabled:
         type: boolean
         default: false
@@ -133,12 +135,11 @@ classes:
         renderer: Zenoss.render.severity
         grid_display: true
         details_display: false
+        label_width: 45
         order: 2
       Protocol:
-        label: Protocol
         order: 6
       Method:
-        label: Method
         order: 7
       Host:
         # Will have to remove passwords
@@ -155,7 +156,7 @@ classes:
       Resolution:
         # Assembled from Width and Height attributes
         details_display: true
-        order: 6
+        order: 10 
       Width:
         type: int
         details_display: false
@@ -164,20 +165,25 @@ classes:
         details_display: false
       Controllable:
         label: PTZ Controls
+        short_label: PTZ
         type: boolean
         default: false
+        details_display: false
       ControlId:
-        # Look up in controls.json
         label: PTZ Type
+        order: 14
       AnalysisFPS:
         label: Analysis FPS
         type: float
+        order: 11
       MaxFPS:
         label: Max FPS
         type: float
+        order: 12
       AlarmMaxFPS:
         label: Alarm Max FPS
         type: float
+        order: 13
       
 
   # Different classes required for different monitor protocol health checks

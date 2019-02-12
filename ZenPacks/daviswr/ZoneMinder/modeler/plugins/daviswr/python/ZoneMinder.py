@@ -202,13 +202,88 @@ class ZoneMinder(PythonPlugin):
 
         for item in results.get('monitors', list()):
             monitor = item['Monitor']
-            monitor_name = monitor.get('Name') \
-                or monitor.get('Id') \
-                or monitor.get('Sequence')
-            monitor['id'] = self.prepId('zmMonitor_{0}'.format(
-                monitor_name
-                ))
+            monitor_id = monitor.get('Id') \
+                or (int(monitor.get('Sequence')) + 1)
+            monitor_name = monitor.get('Name') or monitor_id
+            monitor['id'] = self.prepId('zmMonitor_{0}'.format(monitor_id))
             monitor['title'] = monitor_name
+
+            # We may or may not have a hostname/IP, port, protocol,
+            # path, or full URL. Some of these may have passwords.
+            full_url_regex = r'([A-Za-z]+):\/\/([^/]+)(\/.*)'
+            path = monitor.get('Path', '')
+            path_url_match = re.match(full_url_regex, path)
+            if path_url_match:
+                # Path attribute is a full URL with protocol, host, and port
+                # so it's more believable than the individual attributes
+                log.debug('%s: Path is full URL: %s', device.id, path)
+                protocol = path_url_match.groups()[0]
+                host_string = path_url_match.groups()[1]
+                url_path = path_url_match.groups()[2]
+            else:
+                log.debug('%s: Path is NOT a full URL: %s', device.id, path)
+                protocol = monitor.get('Protocol', '')
+                host_string = monitor.get('Host', '')
+                url_path = monitor.get('Path', '')
+
+            if '@' in host_string:
+                log.debug(
+                    '%s: Credentials found in host: %s',
+                    device.id,
+                    host_string
+                    )
+                (credentials, host_string) = host_string.split('@')
+                url_path = url_path.replace(credentials + '@', '')
+                path = path.replace(credentials + '@', '')
+
+            if ':' in host_string:
+                log.debug('%s: Port found in host: %s', device.id, host_string)
+                (host, port) = host_string.split(':')
+            else:
+                host = host_string
+                port = monitor.get('Port', '')
+
+            protocol_port = {
+                'http': '80',
+                'https': '443',
+                'rtsp': '554',
+                }
+
+            # Invert the dictionary
+            port_protocol = dict(map(reversed, protocol_port.items()))
+
+            if port:
+                if (not protocol
+                        or protocol != port_protocol.get(port, protocol)):
+                    protocol = port_protocol.get(port, protocol)
+                    log.debug('%s: Fixing protocol: %s', device.id, protocol)
+            elif protocol:
+                port = protocol_port.get(protocol, port)
+                log.debug('%s: Fixing port: %s', device.id, port)
+
+            if not path_url_match:
+                path = '{0}://{1}:{2}{3}'.format(
+                    protocol,
+                    host,
+                    port,
+                    url_path
+                    )
+                log.debug('%s: Assembled URL %s', device.id, path)
+
+            url_password_regex = r'(\S+)passw?o?r?d?=[^_&?]+[_&?](\S+)'
+            url_password_match = re.match(url_password_regex, path)
+            if url_password_match:
+                log.debug('%s: Remove password from URL %s', device.id, path)
+                path = '{0}{1}'.format(
+                    url_password_match.groups()[0],
+                    url_password_match.groups()[1]
+                    )
+
+            monitor['Path'] = path
+            monitor['Host'] = host
+            monitor['Port'] = port
+            monitor['Protocol'] = protocol.upper()
+
             monitor['MonitorType'] = monitor.get('Type')
             if 'Ffmpeg' == monitor['MonitorType']:
                 monitor['MonitorType'] = 'FFmpeg'
