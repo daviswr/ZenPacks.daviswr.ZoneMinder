@@ -97,6 +97,9 @@ class ZoneMinder(PythonPlugin):
                     device.id
                     )
                 returnValue(None)
+            elif len(cookies) == 0:
+                log.error('%s: No cookies received', device.id)
+                returnValue(None)
 
             log.debug('%s: ZoneMinder cookies\n%s', device.id, cookies)
 
@@ -142,6 +145,13 @@ class ZoneMinder(PythonPlugin):
                 cookies=cookies
                 )
             output.update(json.loads(response))
+
+            # Log out
+            yield getPage(
+                base_url + 'index.php?action=logout',
+                method='POST',
+                cookies=cookies
+                )
 
         except Exception, e:
             log.error('%s: %s', device.id, e)

@@ -324,6 +324,53 @@ zProperties:
     type: string
 
 
-#device_classes:
-#  /:
-#    remove: false
+device_classes:
+  /:
+    remove: false
+    templates:
+      ZoneMinderDaemon:
+        targetPythonClass: ZenPacks.daviswr.ZoneMinder.ZoneMinder
+
+        datasources:
+          Daemon:
+            type: Python
+            plugin_classname: ZenPacks.daviswr.ZoneMinder.dsplugins.Daemon
+            cycletime: 300
+
+            datapoints:
+              result: GAUGE
+              load-1: GAUGE
+              load-5: GAUGE
+              load-15: GAUGE
+
+        thresholds:
+          Daemon-Status:
+            type: MinMaxThreshold
+            enabled: true
+            dsnames:
+              - Daemon_result
+            severity: 4
+            eventClass: /Status
+            minval: 1
+            maxval: 1
+
+        graphs:
+          DEFAULTS:
+            miny: 0
+          Load:
+            graphpoints:
+              1-Minute Avg:
+                dpName: Daemon_load-1
+                lineType: AREA
+                stacked: true
+                colorindex: 0
+              5-Minute Avg:
+                dpName: Daemon_load-5
+                lineType: LINE
+                lineWidth: 2
+                colorindex: 1
+              15-Minute Avg:
+                dpName: Daemon_load-15
+                lineType: LINE
+                lineWidth: 1
+                colorindex: 1
