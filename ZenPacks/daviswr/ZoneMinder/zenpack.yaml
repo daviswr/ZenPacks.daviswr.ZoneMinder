@@ -345,14 +345,15 @@ device_classes:
 
         thresholds:
           Daemon-Status:
-            type: MinMaxThreshold
+            #type: MinMaxThreshold
+            type: ValueChangeThreshold
             enabled: true
             dsnames:
               - Daemon_result
             severity: 4
             eventClass: /Status
-            minval: 1
-            maxval: 1
+            #minval: 1
+            #maxval: 1
 
         graphs:
           DEFAULTS:
