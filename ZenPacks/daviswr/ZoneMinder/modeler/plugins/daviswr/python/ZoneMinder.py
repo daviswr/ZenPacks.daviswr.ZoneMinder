@@ -74,7 +74,6 @@ class ZoneMinder(PythonPlugin):
             returnValue(None)
 
         log.info('%s: using base ZoneMinder URL %s', device.id, base_url)
-        api_url = b'{0}api/'.format(base_url)
         # Pre-1.32 compatibility
         login_params = urllib.urlencode({
             'action': 'login',
@@ -82,9 +81,8 @@ class ZoneMinder(PythonPlugin):
             'username': username,
             'password': password,
             })
-        login_url = b'{0}index.php?{1}'.format(base_url, login_params)
-        # Password will be visible in log output
-        #log.debug('%s: ZoneMinder login URL %s', device.id, login_url)
+        login_url = '{0}index.php?{1}'.format(base_url, login_params)
+        api_url = '{0}api/'.format(base_url)
 
         cookies = dict()
         # Attempt login

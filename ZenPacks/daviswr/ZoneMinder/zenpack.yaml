@@ -345,15 +345,12 @@ device_classes:
 
         thresholds:
           Daemon-Status:
-            #type: MinMaxThreshold
             type: ValueChangeThreshold
             enabled: true
             dsnames:
               - Daemon_result
             severity: 4
             eventClass: /Status
-            #minval: 1
-            #maxval: 1
 
         graphs:
           DEFAULTS:
@@ -375,3 +372,25 @@ device_classes:
                 lineType: LINE
                 lineWidth: 1
                 colorindex: 1
+
+
+      ZoneMinderMonitor:
+        targetPythonClass: ZenPacks.daviswr.ZoneMinder.ZMMonitor
+
+        datasources:
+          Monitor:
+            type: Python
+            plugin_classname: ZenPacks.daviswr.ZoneMinder.dsplugins.Monitor
+            cycletime: 300
+
+            datapoints:
+              status: GAUGE
+
+        thresholds:
+          Monitor-Status:
+            type: ValueChangeThreshold
+            enabled: true
+            dsnames:
+             - Monitor_status
+            severity: 4
+            eventClass: /Status
