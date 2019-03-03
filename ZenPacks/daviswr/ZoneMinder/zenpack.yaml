@@ -3,8 +3,9 @@ name: ZenPacks.daviswr.ZoneMinder
 class_relationships:
   - Products.ZenModel.Device.Device(zoneMinder) 1:MC ZoneMinder(server)
   - ZoneMinder(zmMonitors) 1:MC ZMMonitor(zoneMinder)
-  - ZoneMinder(zmServers) 1:MC ZMServer(zoneMinder)
-  - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
+# These relationships will be supported in a future release
+#  - ZoneMinder(zmServers) 1:MC ZMServer(zoneMinder)
+#  - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
 
 classes:
   DEFAULTS:
@@ -15,21 +16,27 @@ classes:
     plural_label: ZoneMinder Daemon
     short_label: ZM Daemon
     plural_short_label: ZM Daemon
-    relationships:
-      zmServers:
-        grid_display: false
-        details_display: false
-      zmStorage:
-        grid_display: false
-        details_display: false
+    # relationships:
+    #   zmServers:
+    #     grid_display: false
+    #     details_display: false
+    #   zmStorage:
+    #     grid_display: false
+    #     details_display: false
     properties:
       DEFAULTS:
         type: string
         grid_display: false
+      url:
+         label: URL
+         grid_display: true
+         order: 1
+         label_width: 200
       version:
         label: Version
         grid_display: true
         order: 2
+        label_width: 50
       apiversion:
         label: API Version
         order: 13
@@ -69,7 +76,7 @@ classes:
         renderer: Zenoss.render.severity
         grid_display: true
         details_display: false
-        label_width: 45
+        label_width: 40
         order: 3
       # Path to (optional) ffmpeg mpeg encoder
       ZmPathFfmpeg:
@@ -101,7 +108,7 @@ classes:
         renderer: Zenoss.render.severity
         grid_display: true
         details_display: false
-        label_width: 35
+        label_width: 30
         order: 4
       
 
@@ -196,11 +203,6 @@ classes:
     base: [ZMMonitor]
     label: ZoneMinder RTSP Monitor
     short_label: RTSP Monitor
-
-  ZMHttpRtspMonitor:
-    base: [ZMMonitor]
-    label: ZoneMinder HTTP-RSTP Monitor
-    short_label: HTTP-RSTP Monitor
 
 
   ZMServer:
@@ -441,7 +443,8 @@ event_classes:
               }
       
       elif (evt.eventKey.endswith('Monitor-Status')):
-          evt.summary = 'ZM monitor {0} process {1}'.format(evt.component, state)
+          monitor_id = evt.component.replace('zmMonitor_', '')
+          evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
           severities = {
               0: SEVERITY_WARNING,
               1: SEVERITY_CLEAR,

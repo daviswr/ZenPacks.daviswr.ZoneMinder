@@ -166,7 +166,7 @@ class ZoneMinder(PythonPlugin):
         daemon = dict()
 
         # Expecting results to be a dict
-        for key in ['version', 'apiversion']:
+        for key in ['url', 'version', 'apiversion']:
             daemon[key] = results.get(key)
 
         for item in results.get('configs', list()):
@@ -179,8 +179,8 @@ class ZoneMinder(PythonPlugin):
         for key in booleans:
             daemon[key] = True if daemon[key] == '1' else False
 
-        daemon['id'] = self.prepId('ZoneMinder')
-        daemon['title'] = results['url']
+        daemon['title'] = 'ZoneMinder'
+        daemon['id'] = self.prepId(daemon['title'])
 
         rm = RelationshipMap(
             relname='zoneMinder',

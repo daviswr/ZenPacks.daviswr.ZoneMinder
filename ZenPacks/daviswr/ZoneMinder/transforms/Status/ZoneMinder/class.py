@@ -23,7 +23,8 @@ if (evt.eventKey.endswith('Daemon-Status')):
         }
 
 elif (evt.eventKey.endswith('Monitor-Status')):
-    evt.summary = 'ZM monitor {0} process {1}'.format(evt.component, state)
+    monitor_id = evt.component.replace('zmMonitor_', '')
+    evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
     severities = {
         0: SEVERITY_WARNING,
         1: SEVERITY_CLEAR,
