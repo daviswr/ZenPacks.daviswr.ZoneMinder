@@ -342,6 +342,8 @@ device_classes:
               load-1: GAUGE
               load-5: GAUGE
               load-15: GAUGE
+              disk: GAUGE
+              devshm: GAUGE
 
         thresholds:
           Daemon-Status:
@@ -350,7 +352,7 @@ device_classes:
             dsnames:
               - Daemon_result
             severity: 4
-            eventClass: /Status
+            eventClass: /Status/ZoneMinder
 
         graphs:
           DEFAULTS:
@@ -369,6 +371,20 @@ device_classes:
                 colorindex: 1
               15-Minute Avg:
                 dpName: Daemon_load-15
+                lineType: LINE
+                lineWidth: 1
+                colorindex: 2
+          Storage:
+            maxy: 100
+            units: percentage
+            graphpoints:
+              Disk:
+                dpName: Daemon_disk
+                lineType: AREA
+                stacked: TRUE
+                colorindex: 0
+              Temp:
+                dpName: Daemon_devshm
                 lineType: LINE
                 lineWidth: 1
                 colorindex: 1
@@ -393,4 +409,42 @@ device_classes:
             dsnames:
              - Monitor_status
             severity: 4
-            eventClass: /Status
+            eventClass: /Status/ZoneMinder
+
+event_classes:
+  /Status/ZoneMinder:
+    remove: true
+    description: ZoneMinder events
+    transform: |-
+      from zenoss.protocols.protobufs.zep_pb2 import (
+          SEVERITY_CLEAR,
+          SEVERITY_WARNING,
+          SEVERITY_ERROR
+          )
+      
+      # ZPL Components look for events in /Status rather than
+      # /Status/ClassName to determine up/down status
+      evt.eventClass = '/Status'
+      
+      current = int(float(evt.current))
+      states = {
+          0: 'is not running',
+          1: 'is running',
+          }
+      state = states.get(current, 'status is unknown')
+      
+      if (evt.eventKey.endswith('Daemon-Status')):
+          evt.summary = 'ZoneMinder daemon {0}'.format(state)
+          severities = {
+              0: SEVERITY_ERROR,
+              1: SEVERITY_CLEAR,
+              }
+      
+      elif (evt.eventKey.endswith('Monitor-Status')):
+          evt.summary = 'ZM monitor {0} process {1}'.format(evt.component, state)
+          severities = {
+              0: SEVERITY_WARNING,
+              1: SEVERITY_CLEAR,
+              }
+      
+      evt.severity = severities.get(current, SEVERITY_WARNING)

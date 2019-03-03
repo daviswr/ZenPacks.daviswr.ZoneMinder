@@ -93,7 +93,7 @@ class Daemon(PythonDataSourcePlugin):
 
             login_params = urllib.urlencode({
                 'action': 'login',
-                'view': 'postlogin',
+                'view': 'console',
                 'username': username,
                 'password': password,
                 })
@@ -121,6 +121,12 @@ class Daemon(PythonDataSourcePlugin):
 
                 output = dict()
 
+                # Scrape load, disk, and /dev/shm utilization from web
+                stats_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/dev\/shm.?\s(\d+)%?'  # noqa
+                match = re.search(stats_regex, login_response)
+                if match:
+                    output['console'] = match.groups()
+
                 # Daemon status
                 response = yield getPage(
                     api_url + 'host/daemonCheck.json',
@@ -136,8 +142,6 @@ class Daemon(PythonDataSourcePlugin):
                     cookies=cookies
                     )
                 output.update(json.loads(response))
-
-                # Scrape index.php for disk %?
 
                 # Log out
                 yield getPage(
@@ -156,6 +160,9 @@ class Daemon(PythonDataSourcePlugin):
             load = output.get('load', list())
             if len(load) >= 3:
                 (stats['load-1'], stats['load-5'], stats['load-15']) = load
+            console = output.get('console', list())
+            if len(console) >= 2:
+                (stats['disk'], stats['devshm']) = console
 
             for datapoint_id in (x.id for x in datasource.points):
                 if datapoint_id not in stats:
@@ -299,10 +306,10 @@ class Monitor(PythonDataSourcePlugin):
                     cookies=cookies
                     )
             except Exception, e:
-                LOG.exception('%s: failed to get daemon data', config.id)
+                LOG.exception('%s: failed to get monitor data', config.id)
                 continue
 
-            LOG.debug('%s: ZM daemon output:\n%s', config.id, output)
+            LOG.debug('%s: ZM monitor output:\n%s', config.id, output)
 
             stats = dict()
             stats['status'] = 1 if output.get('status') else 0
