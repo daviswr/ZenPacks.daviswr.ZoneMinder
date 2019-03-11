@@ -175,7 +175,7 @@ class ZoneMinder(PythonPlugin):
             value = config['Value']
             daemon[key] = value
 
-        booleans = ['ZmOptFfmpeg', 'ZmOptFrameServer']
+        booleans = ['ZmOptControl', 'ZmOptFfmpeg', 'ZmOptFrameServer']
         for key in booleans:
             daemon[key] = True if daemon[key] == '1' else False
 
@@ -313,6 +313,18 @@ class ZoneMinder(PythonPlugin):
 
             for key in integers:
                 monitor[key] = int(monitor.get(key, 0))
+
+            color_map = {
+                '1': '8-bit grayscale',
+                '2': '24-bit color',
+                '3': '32-bit color',
+                '4': '32-bit color',
+                }
+
+            monitor['Color'] = color_map.get(
+                monitor.get('Colours', 0),
+                'Unknown'
+                )
 
             monitor['Resolution'] = '{0}x{1}'.format(
                 monitor['Width'],

@@ -77,31 +77,29 @@ classes:
         grid_display: true
         details_display: false
         label_width: 40
-        order: 3
-      # Path to (optional) ffmpeg mpeg encoder
-      ZmPathFfmpeg:
-        label: FFmpeg Path
-        order: 18
-      # Formats to allow for ffmpeg video generation
-      ZmFfmpegFormats:
-        label: FFmpeg Formats
-        default: mpg mpeg wmv asf avi mov swf 3gp
-        order: 19
+        order: 5
       # Maximum number of log entries to retain
       ZmLogDatabaseLimit:
         label: Log Database Limit
         default: 7 day
         order: 21
-      # Path to the various logs that the ZoneMinder daemons generate
-      ZmPathLogs:
-        label: Log Path
-        default: /var/log/zm
-        order: 20
       # enables a frame server daemon (zmf)
       # which will be sent the images from the analysis daemon
       ZmOptFrameServer:
         label: Frame Server
         short_label: ZMF
+        type: boolean
+        default: false
+        enum: {true: "clear", false: "debug"}
+        renderer: Zenoss.render.severity
+        grid_display: true
+        details_display: false
+        label_width: 30
+        order: 3
+      # Support controllable (e.g. PTZ) cameras
+      ZmOptControl:
+        label: PTZ Support
+        short_label: PTZ
         type: boolean
         default: false
         enum: {true: "clear", false: "debug"}
@@ -170,6 +168,10 @@ classes:
       Height:
         type: int
         details_display: false
+      Color:
+        label: Color Depth
+        short_label: Colors
+        order: 11
       Controllable:
         label: PTZ Controls
         short_label: PTZ
@@ -178,31 +180,32 @@ classes:
         details_display: false
       ControlId:
         label: PTZ Type
-        order: 14
+        order: 15
       AnalysisFPS:
         label: Analysis FPS
         type: float
-        order: 11
+        order: 12
       MaxFPS:
         label: Max FPS
         type: float
-        order: 12
+        order: 13
       AlarmMaxFPS:
         label: Alarm Max FPS
         type: float
-        order: 13
+        order: 14
       
 
   # Different classes required for different monitor protocol health checks
-  ZMHttpMonitor:
-    base: [ZMMonitor]
-    label: ZoneMinder HTTP Monitor
-    short_label: HTTP Monitor
+  # Direct monitor healths for a future version
+  #ZMHttpMonitor:
+  #  base: [ZMMonitor]
+  #  label: ZoneMinder HTTP Monitor
+  #  short_label: HTTP Monitor
 
-  ZMRtspMonitor:
-    base: [ZMMonitor]
-    label: ZoneMinder RTSP Monitor
-    short_label: RTSP Monitor
+  #ZMRtspMonitor:
+  #  base: [ZMMonitor]
+  #  label: ZoneMinder RTSP Monitor
+  #  short_label: RTSP Monitor
 
 
   ZMServer:
@@ -324,6 +327,12 @@ zProperties:
     default: true
   zZoneMinderURL:
     type: string
+  zZoneMinderIgnoreMonitorId:
+    type: list
+  zZoneMinderIgnoreMonitorName:
+    type: string
+  zZoneMinderIgnoreMonitorIP:
+    type: list
 
 
 device_classes:
@@ -346,6 +355,7 @@ device_classes:
               load-15: GAUGE
               disk: GAUGE
               devshm: GAUGE
+              state: GAUGE
 
         thresholds:
           Daemon-Status:
@@ -354,6 +364,14 @@ device_classes:
             dsnames:
               - Daemon_result
             severity: 4
+            eventClass: /Status/ZoneMinder
+
+          RunState:
+            type: ValueChangeThreshold
+            enabled: true
+            dsnames:
+              - Daemon_state
+            severity: 1
             eventClass: /Status/ZoneMinder
 
         graphs:
