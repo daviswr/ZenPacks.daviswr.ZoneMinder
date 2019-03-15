@@ -299,6 +299,14 @@ class Monitor(PythonDataSourcePlugin):
                     )
                 output.update(json.loads(response))
 
+                # Five-minute event counts
+                response = yield getPage(
+                    api_url + 'events/consoleEvents/5%20minute.json',
+                    method='GET',
+                    cookies=cookies
+                    )
+                output.update(json.loads(response))
+
                 # Log out
                 yield getPage(
                     base_url + 'index.php?action=logout',
@@ -313,12 +321,18 @@ class Monitor(PythonDataSourcePlugin):
 
             stats = dict()
             stats['status'] = 1 if output.get('status') else 0
+            events = output.get('results', dict())
+            # "results" will be an empty *list* if no monitors have events
+            if len(events) > 0:
+                stats['events'] = int(events.get(comp_id, 0))
+            else:
+                stats['events'] = 0
 
             for datapoint_id in (x.id for x in datasource.points):
                 if datapoint_id not in stats:
                     continue
 
-                value = stats['status']
+                value = stats.get(datapoint_id)
                 dpname = '_'.join((datasource.datasource, datapoint_id))
                 data['values'][datasource.component][dpname] = (value, 'N')
 

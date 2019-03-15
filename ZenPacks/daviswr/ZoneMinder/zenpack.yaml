@@ -31,7 +31,7 @@ classes:
          label: URL
          grid_display: true
          order: 1
-         label_width: 200
+         label_width: 250
       version:
         label: Version
         grid_display: true
@@ -52,20 +52,7 @@ classes:
       # The email address to send matching event details to
       ZmEmailAddress:
         label: Email Address
-        order: 14
-      # The email address to send matching event details to
-      ZmMessageAddress:
-        label: Message Address
-        order: 15
-      # The email address you wish your event notifications to originate from
-      ZmFromEmail:
-        label: From Email Address
-        order: 16
-      # The host address of your SMTP mail server
-      ZmEmailHost:
-        label: Email Host
-        default: localhost
-        order: 17
+        order: 13
       # Is the ffmpeg video encoder/decoder installed
       ZmOptFfmpeg:
         label: FFmpeg Support
@@ -196,16 +183,20 @@ classes:
       
 
   # Different classes required for different monitor protocol health checks
-  # Direct monitor healths for a future version
-  #ZMHttpMonitor:
-  #  base: [ZMMonitor]
-  #  label: ZoneMinder HTTP Monitor
-  #  short_label: HTTP Monitor
+  ZMIpMonitor:
+    base: [ZMMonitor]
+    label: ZoneMinder IP Monitor
+    short_label: IP Monitor
 
-  #ZMRtspMonitor:
-  #  base: [ZMMonitor]
-  #  label: ZoneMinder RTSP Monitor
-  #  short_label: RTSP Monitor
+  ZMHttpMonitor:
+    base: [ZMMonitor]
+    label: ZoneMinder HTTP Monitor
+    short_label: HTTP Monitor
+
+  ZMRtspMonitor:
+    base: [ZMMonitor]
+    label: ZoneMinder RTSP Monitor
+    short_label: RTSP Monitor
 
 
   ZMServer:
@@ -377,7 +368,7 @@ device_classes:
         graphs:
           DEFAULTS:
             miny: 0
-          Load:
+          ZM Daemon Load:
             graphpoints:
               1-Minute Avg:
                 dpName: Daemon_load-1
@@ -394,7 +385,7 @@ device_classes:
                 lineType: LINE
                 lineWidth: 1
                 colorindex: 2
-          Storage:
+          ZM Daemon Storage:
             maxy: 100
             units: percentage
             graphpoints:
@@ -421,6 +412,7 @@ device_classes:
 
             datapoints:
               status: GAUGE
+              events: GAUGE
 
         thresholds:
           Monitor-Status:
@@ -430,6 +422,19 @@ device_classes:
              - Monitor_status
             severity: 4
             eventClass: /Status/ZoneMinder
+
+        graphs:
+          DEFAULTS:
+            miny: 0
+          ZM Monitor Events:
+            units: events/min
+            graphpoints:
+              Events:
+                dpName: Monitor_events
+                rpn: CEIL
+                lineType: AREA
+                stacked: true
+                colorindex: 0
 
 event_classes:
   /Status/ZoneMinder:
