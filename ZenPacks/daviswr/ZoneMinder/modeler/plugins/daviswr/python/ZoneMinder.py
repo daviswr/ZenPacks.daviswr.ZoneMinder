@@ -26,6 +26,9 @@ class ZoneMinder(PythonPlugin):
         'zZoneMinderPath',
         'zZoneMinderSSL',
         'zZoneMinderURL',
+        'zZoneMinderIgnoreMonitorId',
+        'zZoneMinderIgnoreMonitorName',
+        'zZoneMinderIgnoreMonitorHostname',
         )
 
     deviceProperties = PythonPlugin.deviceProperties + requiredProperties
@@ -208,6 +211,10 @@ class ZoneMinder(PythonPlugin):
             value = '{0} {1}'.format(control['Name'], control['Type'])
             ptz[key] = value
 
+        ignore_ids = getattr(device, 'zZoneMinderIgnoreMonitorId', list())
+        ignore_names = getattr(device, 'zZoneMinderIgnoreMonitorName', '')
+        ignore_host = getattr(device, 'zZoneMinderIgnoreMonitorHostname', '')
+
         for item in results.get('monitors', list()):
             monitor = item['Monitor']
             monitor_id = monitor.get('Id') \
@@ -215,6 +222,23 @@ class ZoneMinder(PythonPlugin):
             monitor_name = monitor.get('Name') or monitor_id
             monitor['id'] = self.prepId('zmMonitor_{0}'.format(monitor_id))
             monitor['title'] = monitor_name
+
+            ignore_match = re.search(ignore_names, monitor_name)
+
+            if ignore_ids and monitor_id in ignore_ids:
+                log.info(
+                    '%s: Skipping monitor %s in zZoneMinderIgnoreMonitorId',
+                    device.id,
+                    monitor_id
+                    )
+                continue
+            elif ignore_names and ignore_match:
+                log.info(
+                    '%s: Skipping %s in zZoneMinderIgnoreMonitorName',
+                    device.id,
+                    monitor_name
+                    )
+                continue
 
             # We may or may not have a hostname/IP, port, protocol,
             # path, or full URL. Some of these may have passwords.
@@ -299,6 +323,15 @@ class ZoneMinder(PythonPlugin):
             monitor['Host'] = host
             monitor['Port'] = port
             monitor['Protocol'] = protocol.upper()
+
+            ignore_match = re.search(ignore_host, host)
+            if ignore_host and ignore_match:
+                log.info(
+                    '%s: Skipping %s in zZoneMinderIgnoreMonitorHostname',
+                    device.id,
+                    host
+                    )
+                continue
 
             monitor['MonitorType'] = monitor.get('Type')
             if 'Ffmpeg' == monitor['MonitorType']:

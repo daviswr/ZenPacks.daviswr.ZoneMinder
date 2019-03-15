@@ -331,8 +331,8 @@ zProperties:
     type: list
   zZoneMinderIgnoreMonitorName:
     type: string
-  zZoneMinderIgnoreMonitorIP:
-    type: list
+  zZoneMinderIgnoreMonitorHostname:
+    type: string
 
 
 device_classes:
