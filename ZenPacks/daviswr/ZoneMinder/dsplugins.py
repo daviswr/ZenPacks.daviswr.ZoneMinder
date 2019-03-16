@@ -135,9 +135,25 @@ class Daemon(PythonDataSourcePlugin):
                     )
                 output.update(json.loads(response))
 
+                # Run state
+                response = yield getPage(
+                    api_url + 'states.json',
+                    method='GET',
+                    cookies=cookies
+                    )
+                output.update(json.loads(response))
+
                 # Host Load
                 response = yield getPage(
                     api_url + 'host/getLoad.json',
+                    method='GET',
+                    cookies=cookies
+                    )
+                output.update(json.loads(response))
+
+                # Five-minute event counts
+                response = yield getPage(
+                    api_url + 'events/consoleEvents/5%20minute.json',
                     method='GET',
                     cookies=cookies
                     )
@@ -156,13 +172,31 @@ class Daemon(PythonDataSourcePlugin):
             LOG.debug('%s: ZM daemon output:\n%s', config.id, output)
 
             stats = dict()
+            # Daemon status ("result")
             stats['result'] = output.get('result', '0')
+
+            states = output.get('states', list())
+            if len(states) > 0:
+                for state in states:
+                    if state.get('State', dict()).get('IsActive', '0') == '1':
+                        stats['state'] = state['State']['Id']
+                        break
+
             load = output.get('load', list())
             if len(load) >= 3:
                 (stats['load-1'], stats['load-5'], stats['load-15']) = load
+
             console = output.get('console', list())
             if len(console) >= 2:
                 (stats['disk'], stats['devshm']) = console
+
+            # Event counts ("results", plural)
+            events = output.get('results', list())
+            stats['events'] = 0
+            # "results" will be an empty *list* if no monitors have events
+            if len(events) > 0:
+                for key in events.keys():
+                    stats['events'] += int(events.get(key, 0))
 
             for datapoint_id in (x.id for x in datasource.points):
                 if datapoint_id not in stats:
@@ -301,7 +335,7 @@ class Monitor(PythonDataSourcePlugin):
 
                 # Five-minute event counts
                 response = yield getPage(
-                    api_url + 'events/consoleEvents/5%20minute.json',
+                    api_url + 'events/consoleEvents/300%20second.json',
                     method='GET',
                     cookies=cookies
                     )
@@ -321,7 +355,8 @@ class Monitor(PythonDataSourcePlugin):
 
             stats = dict()
             stats['status'] = 1 if output.get('status') else 0
-            events = output.get('results', dict())
+
+            events = output.get('results', list())
             # "results" will be an empty *list* if no monitors have events
             if len(events) > 0:
                 stats['events'] = int(events.get(comp_id, 0))

@@ -347,6 +347,7 @@ device_classes:
               disk: GAUGE
               devshm: GAUGE
               state: GAUGE
+              events: GAUGE
 
         thresholds:
           Daemon-Status:
@@ -357,7 +358,7 @@ device_classes:
             severity: 4
             eventClass: /Status/ZoneMinder
 
-          RunState:
+          Daemon-RunState:
             type: ValueChangeThreshold
             enabled: true
             dsnames:
@@ -397,8 +398,17 @@ device_classes:
               Temp:
                 dpName: Daemon_devshm
                 lineType: LINE
-                lineWidth: 1
+                lineWidth: 2
                 colorindex: 1
+          ZM Total Events:
+            units: events/min
+            graphpoints:
+              Events:
+                dpName: Daemon_events
+                rpn: CEIL
+                lineType: LINE
+                lineWidth: 2
+                colorindex: 0
 
 
       ZoneMinderMonitor:
@@ -432,8 +442,8 @@ device_classes:
               Events:
                 dpName: Monitor_events
                 rpn: CEIL
-                lineType: AREA
-                stacked: true
+                lineType: LINE
+                lineWidth: 2
                 colorindex: 0
 
 event_classes:
@@ -447,16 +457,14 @@ event_classes:
           SEVERITY_ERROR
           )
       
-      # ZPL Components look for events in /Status rather than
-      # /Status/ClassName to determine up/down status
-      evt.eventClass = '/Status'
-      
       current = int(float(evt.current))
       states = {
           0: 'is not running',
           1: 'is running',
           }
       state = states.get(current, 'status is unknown')
+
+      severities = dict()
       
       if (evt.eventKey.endswith('Daemon-Status')):
           evt.summary = 'ZoneMinder daemon {0}'.format(state)
@@ -464,7 +472,6 @@ event_classes:
               0: SEVERITY_ERROR,
               1: SEVERITY_CLEAR,
               }
-      
       elif (evt.eventKey.endswith('Monitor-Status')):
           monitor_id = evt.component.replace('zmMonitor_', '')
           evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
@@ -472,5 +479,13 @@ event_classes:
               0: SEVERITY_WARNING,
               1: SEVERITY_CLEAR,
               }
-      
-      evt.severity = severities.get(current, SEVERITY_WARNING)
+      elif evt.eventKey.endswith('Daemon-RunState'):
+          # Run State has changed, remodel to get new monitor functions
+          # Model in background so transform isn't delayed
+          device.collectDevice(background=True)
+
+      if 'Daemon-RunState' not in evt.eventKey:
+          # ZPL Components look for events in /Status rather than
+          # /Status/ClassName to determine up/down status
+          evt.eventClass = '/Status'
+          evt.severity = severities.get(current, SEVERITY_WARNING)
