@@ -153,7 +153,7 @@ class Daemon(PythonDataSourcePlugin):
 
                 # Five-minute event counts
                 response = yield getPage(
-                    api_url + 'events/consoleEvents/5%20minute.json',
+                    api_url + 'events/consoleEvents/300%20second.json',
                     method='GET',
                     cookies=cookies
                     )
