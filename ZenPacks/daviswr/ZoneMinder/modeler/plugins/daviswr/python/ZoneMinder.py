@@ -220,7 +220,7 @@ class ZoneMinder(PythonPlugin):
             monitor_id = monitor.get('Id') \
                 or (int(monitor.get('Sequence')) + 1)
             monitor_name = monitor.get('Name') or monitor_id
-            monitor['id'] = self.prepId('zmMonitor_{0}'.format(monitor_id))
+            monitor['id'] = self.prepId('zmMonitor{0}'.format(monitor_id))
             monitor['title'] = monitor_name
 
             ignore_match = re.search(ignore_names, monitor_name)

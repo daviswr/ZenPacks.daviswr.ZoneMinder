@@ -20,7 +20,7 @@ if evt.eventKey.endswith('Daemon-Status'):
         1: SEVERITY_CLEAR,
         }
 elif 'Monitor' in evt.eventKey:
-    monitor_id = evt.component.replace('zmMonitor_', '')
+    monitor_id = evt.component.replace('zmMonitor', '')
     severities = {
         0: SEVERITY_WARNING,
         1: SEVERITY_CLEAR,

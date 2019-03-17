@@ -456,7 +456,7 @@ event_classes:
               1: SEVERITY_CLEAR,
               }
       elif (evt.eventKey.endswith('Monitor-Status')):
-          monitor_id = evt.component.replace('zmMonitor_', '')
+          monitor_id = evt.component.replace('zmMonitor', '')
           severities = {
               0: SEVERITY_WARNING,
               1: SEVERITY_CLEAR,

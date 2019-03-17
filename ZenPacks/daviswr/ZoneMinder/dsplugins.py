@@ -255,7 +255,7 @@ class Monitor(PythonDataSourcePlugin):
             path = datasource.params['path']
             ssl = datasource.params['ssl']
             base_url = datasource.params['base_url']
-            comp_id = datasource.component.replace('zmMonitor_', '')
+            comp_id = datasource.component.replace('zmMonitor', '')
 
             if not username or not password:
                 LOG.error(
@@ -296,7 +296,7 @@ class Monitor(PythonDataSourcePlugin):
 
             login_params = urllib.urlencode({
                 'action': 'login',
-                'view': 'postlogin',
+                'view': 'console',
                 'username': username,
                 'password': password,
                 })
