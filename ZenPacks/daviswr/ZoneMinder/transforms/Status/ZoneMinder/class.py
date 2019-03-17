@@ -19,17 +19,32 @@ if evt.eventKey.endswith('Daemon-Status'):
         0: SEVERITY_ERROR,
         1: SEVERITY_CLEAR,
         }
-elif evt.eventKey.endswith('Monitor-Status'):
+elif 'Monitor' in evt.eventKey:
     monitor_id = evt.component.replace('zmMonitor_', '')
-    evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
     severities = {
         0: SEVERITY_WARNING,
         1: SEVERITY_CLEAR,
         }
+    if 'Status' in evt.eventKey:
+        evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
+    elif 'Enabled' in evt.eventKey:
+        enabled_map = {
+            0: 'disabled',
+            1: 'enabled',
+            }
+        enabled = enabled_map.get(current, 'unknown')
+        evt.summary = 'ZM monitor {0} is {1}'.format(monitor_id, enabled)
+
+        @transact
+        def updateDb():
+            component.Enabled = True if current == 1 else False
+        updateDb()
+
 elif evt.eventKey.endswith('Daemon-RunState'):
     # Run State has changed, remodel to get new monitor functions
     # Model in background so transform isn't delayed
     device.collectDevice(background=True)
+    evt._action = 'history'
 
 if 'Daemon-RunState' not in evt.eventKey:
     # ZPL Components look for events in /Status rather than

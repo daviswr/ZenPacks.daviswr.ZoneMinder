@@ -52,7 +52,7 @@ classes:
       # The email address to send matching event details to
       ZmEmailAddress:
         label: Email Address
-        order: 13
+        order: 14
       # Is the ffmpeg video encoder/decoder installed
       ZmOptFfmpeg:
         label: FFmpeg Support
@@ -69,7 +69,7 @@ classes:
       ZmLogDatabaseLimit:
         label: Log Database Limit
         default: 7 day
-        order: 21
+        order: 15
       # enables a frame server daemon (zmf)
       # which will be sent the images from the analysis daemon
       ZmOptFrameServer:
@@ -209,42 +209,10 @@ classes:
         type: string
         grid_display: true
         order: 2
-      State_Id:
-        label: State ID
-        type: int
-        default: 0
-        details_display: false
       Status:
         # Will need a way to dynamically update this
         type: string
         details_display: false
-      CpuLoad:
-        label: CPU Load
-        type: float
-        default: 0.0
-        #datapoint:
-      TotalMem:
-        label: Total Memory
-        type: int
-        renderer: Zenoss.render.bytesString
-        default: 0
-      FreeMem:
-        label: Free Memory
-        type: int
-        renderer: Zenoss.render.bytesString
-        default: 0
-        #datapoint:
-      TotalSwap:
-        label: Total Swap Space
-        type: int
-        renderer: Zenoss.render.bytesString
-        default: 0
-      FreeSwap:
-        label: Free Swap Space
-        type: int
-        renderer: Zenoss.render.bytesString
-        default: 0
-        #datapoint:
       zmstats:
         label: Stats
         type: boolean
@@ -338,7 +306,6 @@ device_classes:
             type: Python
             plugin_classname: ZenPacks.daviswr.ZoneMinder.dsplugins.Daemon
             cycletime: 300
-
             datapoints:
               result: GAUGE
               load-1: GAUGE
@@ -351,7 +318,9 @@ device_classes:
 
         thresholds:
           Daemon-Status:
-            type: ValueChangeThreshold
+            type: MinMaxThreshold
+            minval: 1
+            maxval: 1
             enabled: true
             dsnames:
               - Daemon_result
@@ -386,6 +355,7 @@ device_classes:
                 lineType: LINE
                 lineWidth: 1
                 colorindex: 2
+
           ZM Daemon Storage:
             maxy: 100
             units: percentage
@@ -400,6 +370,7 @@ device_classes:
                 lineType: LINE
                 lineWidth: 2
                 colorindex: 1
+
           ZM Total Events:
             units: events/min
             graphpoints:
@@ -419,18 +390,30 @@ device_classes:
             type: Python
             plugin_classname: ZenPacks.daviswr.ZoneMinder.dsplugins.Monitor
             cycletime: 300
-
             datapoints:
               status: GAUGE
               events: GAUGE
+              enabled: GAUGE
 
         thresholds:
           Monitor-Status:
-            type: ValueChangeThreshold
+            type: MinMaxThreshold
+            minval: 1
+            maxval: 1
             enabled: true
             dsnames:
              - Monitor_status
-            severity: 4
+            severity: 3
+            eventClass: /Status/ZoneMinder
+
+          Monitor-Enabled:
+            type: MinMaxThreshold
+            minval: 1
+            maxval: 1
+            enabled: true
+            dsnames:
+             - Monitor_enabled
+            severity: 3
             eventClass: /Status/ZoneMinder
 
         graphs:
@@ -474,15 +457,30 @@ event_classes:
               }
       elif (evt.eventKey.endswith('Monitor-Status')):
           monitor_id = evt.component.replace('zmMonitor_', '')
-          evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
           severities = {
               0: SEVERITY_WARNING,
               1: SEVERITY_CLEAR,
               }
+          if 'Status' in evt.eventKey:
+              evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
+          elif 'Enabled' in evt.eventKey:
+              enabled_map = {
+                  0: 'disabled',
+                  1: 'enabled',
+                  }
+              enabled = enabled_map.get(current, 'unknown')
+              evt.summary = 'ZM monitor {0} is {1}'.format(monitor_id, enabled)
+
+              @transact
+              def updateDb():
+                  component.Enabled = True if current == 1 else False
+              updateDb()
+
       elif evt.eventKey.endswith('Daemon-RunState'):
           # Run State has changed, remodel to get new monitor functions
           # Model in background so transform isn't delayed
           device.collectDevice(background=True)
+          evt._action = 'history'
 
       if 'Daemon-RunState' not in evt.eventKey:
           # ZPL Components look for events in /Status rather than
