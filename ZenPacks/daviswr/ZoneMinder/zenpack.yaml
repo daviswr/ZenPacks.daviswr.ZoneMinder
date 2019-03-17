@@ -449,13 +449,13 @@ event_classes:
 
       severities = dict()
       
-      if (evt.eventKey.endswith('Daemon-Status')):
+      if evt.eventKey.endswith('Daemon-Status'):
           evt.summary = 'ZoneMinder daemon {0}'.format(state)
           severities = {
               0: SEVERITY_ERROR,
               1: SEVERITY_CLEAR,
               }
-      elif (evt.eventKey.endswith('Monitor-Status')):
+      elif 'Monitor' in evt.eventKey:
           monitor_id = evt.component.replace('zmMonitor', '')
           severities = {
               0: SEVERITY_WARNING,
