@@ -12,8 +12,6 @@ from twisted.internet.defer \
 from twisted.web.client \
     import getPage
 
-from Products.DataCollector.plugins.DataMaps \
-    import ObjectMap
 from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource \
     import PythonDataSourcePlugin
 
@@ -321,6 +319,12 @@ class Monitor(PythonDataSourcePlugin):
                         config.id,
                         )
                     returnValue(None)
+                elif 'zmWatch{0}'.format(comp_id) not in login_response:
+                    LOG.error(
+                        '%s: %s not found in ZM web console',
+                        config.id,
+                        datasource.component
+                        )
                 elif len(cookies) == 0:
                     LOG.error('%s: No cookies received', config.id)
                     returnValue(None)
@@ -368,17 +372,6 @@ class Monitor(PythonDataSourcePlugin):
             monitor = output.get('monitor', dict()).get('Monitor', dict())
             if len(monitor) > 0:
                 stats['enabled'] = monitor.get('Enabled', '0')
-                # Update the model without using thresholds & event transforms
-                # Does not seem to work
-                #enabled = True if stats['enabled'] == '1' else False
-                #data['maps'].append(
-                #    ObjectMap({
-                #        'relname': 'zmMonitors',
-                #        'modname': 'ZenPacks.daviswr.ZoneMinder.ZMMonitor',
-                #        'id': datasource.component,
-                #        'Enabled': enabled,
-                #        })
-                #    )
 
             stats['status'] = 1 if output.get('status') else 0
 
