@@ -183,22 +183,24 @@ classes:
       
 
   # Different classes required for different monitor protocol health checks
-  ZMIpMonitor:
-    base: [ZMMonitor]
-    label: ZoneMinder IP Monitor
-    short_label: IP Monitor
+  # These subclasses/templates will be supported in a future release
+  #ZMIpMonitor:
+  #  base: [ZMMonitor]
+  #  label: ZoneMinder IP Monitor
+  #  short_label: IP Monitor
 
-  ZMHttpMonitor:
-    base: [ZMMonitor]
-    label: ZoneMinder HTTP Monitor
-    short_label: HTTP Monitor
+  #ZMHttpMonitor:
+  #  base: [ZMMonitor]
+  #  label: ZoneMinder HTTP Monitor
+  #  short_label: HTTP Monitor
 
-  ZMRtspMonitor:
-    base: [ZMMonitor]
-    label: ZoneMinder RTSP Monitor
-    short_label: RTSP Monitor
+  #ZMRtspMonitor:
+  #  base: [ZMMonitor]
+  #  label: ZoneMinder RTSP Monitor
+  #  short_label: RTSP Monitor
 
 
+  # These relationships will be supported in a future release
   ZMServer:
     label: ZoneMinder Server
     short_label: ZM Server
