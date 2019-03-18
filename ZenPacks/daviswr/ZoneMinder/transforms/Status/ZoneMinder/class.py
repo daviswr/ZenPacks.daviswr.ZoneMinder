@@ -19,6 +19,13 @@ if evt.eventKey.endswith('Daemon-Status'):
         0: SEVERITY_ERROR,
         1: SEVERITY_CLEAR,
         }
+
+elif evt.eventKey.endswith('Daemon-RunState'):
+    # Run State has changed, remodel to get new monitor functions
+    # Model in background so transform isn't delayed
+    device.collectDevice(background=True)
+    evt._action = 'history'
+
 elif 'Monitor' in evt.eventKey:
     monitor_id = evt.component.replace('zmMonitor', '')
     severities = {
@@ -27,6 +34,13 @@ elif 'Monitor' in evt.eventKey:
         }
     if 'Status' in evt.eventKey:
         evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
+    elif 'Online' in evt.eventKey:
+        online_map = {
+            0: 'is offline',
+            1: 'is online',
+            }
+        online = online_map.get(current, 'reachability unknown')
+        evt.summary = 'ZM monitor {0} {1}'.format(monitor_id, online)
     elif 'Enabled' in evt.eventKey:
         enabled_map = {
             0: 'disabled',
@@ -37,14 +51,8 @@ elif 'Monitor' in evt.eventKey:
 
         @transact
         def updateDb():
-            component.Enabled = True if current == 1 else False
+            component.Enabled = True if 1 == current else False
         updateDb()
-
-elif evt.eventKey.endswith('Daemon-RunState'):
-    # Run State has changed, remodel to get new monitor functions
-    # Model in background so transform isn't delayed
-    device.collectDevice(background=True)
-    evt._action = 'history'
 
 if 'Daemon-RunState' not in evt.eventKey:
     # ZPL Components look for events in /Status rather than

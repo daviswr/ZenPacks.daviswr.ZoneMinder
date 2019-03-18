@@ -45,7 +45,7 @@ class Daemon(PythonDataSourcePlugin):
         data = self.new_data()
 
         for datasource in config.datasources:
-            LOG.debug('%s: parameters\n%s', config.id, datasource.params)
+            #LOG.debug('%s: parameters\n%s', config.id, datasource.params)
             username = datasource.params['username']
             password = datasource.params['password']
             hostname = datasource.params['hostname']
@@ -244,8 +244,15 @@ class Monitor(PythonDataSourcePlugin):
     def collect(self, config):
         data = self.new_data()
 
+        url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
+        online_regex = r'<td class="colSource">.*<span class="(\w+)Text">'
+        online_map = {
+            'error': 0,
+            'info': 1,
+            }
+
         for datasource in config.datasources:
-            LOG.debug('%s: parameters\n%s', config.id, datasource.params)
+            #LOG.debug('%s: parameters\n%s', config.id, datasource.params)
             username = datasource.params['username']
             password = datasource.params['password']
             hostname = datasource.params['hostname']
@@ -281,7 +288,6 @@ class Monitor(PythonDataSourcePlugin):
                     path
                     )
 
-            url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
             if re.match(url_regex, base_url) is None:
                 LOG.error('%s: %s is not a valid URL', config.id, base_url)
                 returnValue(None)
@@ -313,23 +319,39 @@ class Monitor(PythonDataSourcePlugin):
                     cookies=cookies
                     )
 
+                output = dict()
+
                 if 'Invalid username or password' in login_response:
                     LOG.error(
                         '%s: ZoneMinder login credentials invalid',
                         config.id,
                         )
                     returnValue(None)
-                elif 'zmWatch{0}'.format(comp_id) not in login_response:
-                    LOG.error(
-                        '%s: %s not found in ZM web console',
-                        config.id,
-                        datasource.component
-                        )
                 elif len(cookies) == 0:
                     LOG.error('%s: No cookies received', config.id)
                     returnValue(None)
 
-                output = dict()
+                watch_id = 'zmWatch{0}'.format(comp_id)
+                if watch_id in login_response:
+                    watch_index = -1
+                    console = login_response.split('\n')
+                    for ii in range(0, len(console) - 1):
+                        if watch_id in console[ii]:
+                            watch_index = ii
+                            break
+                    if watch_index > -1:
+                        online_line = console[watch_index + 2]
+                        online_match = re.search(online_regex, online_line)
+                        if online_match:
+                            online_state = online_match.groups()[0]
+                            output['online'] = online_map.get(online_state, 2)
+
+                else:
+                    LOG.warn(
+                        '%s: %s not found in ZM web console',
+                        config.id,
+                        datasource.component
+                        )
 
                 # Monitor enabled
                 response = yield getPage(
@@ -368,6 +390,9 @@ class Monitor(PythonDataSourcePlugin):
             LOG.debug('%s: ZM monitor output:\n%s', config.id, output)
 
             stats = dict()
+
+            if 'online' in output:
+                stats['online'] = output['online']
 
             monitor = output.get('monitor', dict()).get('Monitor', dict())
             if len(monitor) > 0:

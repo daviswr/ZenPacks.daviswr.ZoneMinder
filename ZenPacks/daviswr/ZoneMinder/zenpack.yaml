@@ -394,6 +394,7 @@ device_classes:
               status: GAUGE
               events: GAUGE
               enabled: GAUGE
+              online: GAUGE
 
         thresholds:
           Monitor-Status:
@@ -413,6 +414,16 @@ device_classes:
             enabled: true
             dsnames:
              - Monitor_enabled
+            severity: 3
+            eventClass: /Status/ZoneMinder
+
+          Monitor-Online:
+            type: MinMaxThreshold
+            minval: 1
+            maxval: 1
+            enabled: true
+            dsnames:
+             - Monitor_online
             severity: 3
             eventClass: /Status/ZoneMinder
 
@@ -446,7 +457,7 @@ event_classes:
           1: 'is running',
           }
       state = states.get(current, 'status is unknown')
-
+      
       severities = dict()
       
       if evt.eventKey.endswith('Daemon-Status'):
@@ -455,6 +466,13 @@ event_classes:
               0: SEVERITY_ERROR,
               1: SEVERITY_CLEAR,
               }
+      
+      elif evt.eventKey.endswith('Daemon-RunState'):
+          # Run State has changed, remodel to get new monitor functions
+          # Model in background so transform isn't delayed
+          device.collectDevice(background=True)
+          evt._action = 'history'
+      
       elif 'Monitor' in evt.eventKey:
           monitor_id = evt.component.replace('zmMonitor', '')
           severities = {
@@ -463,6 +481,13 @@ event_classes:
               }
           if 'Status' in evt.eventKey:
               evt.summary = 'ZM monitor {0} process {1}'.format(monitor_id, state)
+          elif 'Online' in evt.eventKey:
+              online_map = {
+                  0: 'is offline',
+                  1: 'is online',
+                  }
+              online = online_map.get(current, 'reachability unknown')
+              evt.summary = 'ZM monitor {0} {1}'.format(monitor_id, online)
           elif 'Enabled' in evt.eventKey:
               enabled_map = {
                   0: 'disabled',
@@ -470,18 +495,12 @@ event_classes:
                   }
               enabled = enabled_map.get(current, 'unknown')
               evt.summary = 'ZM monitor {0} is {1}'.format(monitor_id, enabled)
-
+      
               @transact
               def updateDb():
-                  component.Enabled = True if current == 1 else False
+                  component.Enabled = True if 1 == current else False
               updateDb()
-
-      elif evt.eventKey.endswith('Daemon-RunState'):
-          # Run State has changed, remodel to get new monitor functions
-          # Model in background so transform isn't delayed
-          device.collectDevice(background=True)
-          evt._action = 'history'
-
+      
       if 'Daemon-RunState' not in evt.eventKey:
           # ZPL Components look for events in /Status rather than
           # /Status/ClassName to determine up/down status
