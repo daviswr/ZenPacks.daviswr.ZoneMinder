@@ -180,7 +180,8 @@ class ZoneMinder(PythonPlugin):
 
         booleans = ['ZmOptControl', 'ZmOptFfmpeg', 'ZmOptFrameServer']
         for key in booleans:
-            daemon[key] = True if daemon[key] == '1' else False
+            if key in daemon:
+                daemon[key] = True if daemon[key] == '1' else False
 
         daemon['title'] = 'ZoneMinder'
         daemon['id'] = self.prepId(daemon['title'])
@@ -197,7 +198,6 @@ class ZoneMinder(PythonPlugin):
         maps.append(rm)
 
         # Monitors
-        monitors = list()
         rm = RelationshipMap(
             compname='zoneMinder/ZoneMinder',
             relname='zmMonitors',
@@ -345,7 +345,11 @@ class ZoneMinder(PythonPlugin):
                 ]
 
             for key in integers:
-                monitor[key] = int(monitor.get(key, 0))
+                value = monitor.get(key, 0)
+                if isinstance(value, int) or isinstance(value, str):
+                    monitor[key] = int(monitor.get(key, 0))
+                else:
+                    monitor[key] = 0
 
             color_map = {
                 '1': '8-bit grayscale',
@@ -359,10 +363,13 @@ class ZoneMinder(PythonPlugin):
                 'Unknown'
                 )
 
-            monitor['Resolution'] = '{0}x{1}'.format(
-                monitor['Width'],
-                monitor['Height']
-                )
+            if monitor['Width'] > 0 and monitor['Height'] > 0:
+                monitor['Resolution'] = '{0}x{1}'.format(
+                    monitor['Width'],
+                    monitor['Height']
+                    )
+            else:
+                monitor['Resolution'] = ''
 
             floats = [
                 'AnalysisFPS',
