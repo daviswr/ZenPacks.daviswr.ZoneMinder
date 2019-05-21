@@ -121,12 +121,9 @@ class Daemon(PythonDataSourcePlugin):
 
                 output = dict()
 
-                # Scrape load, disk, and (/dev/shm|/run/shm) utilization
-                # from HTML output
+                # Scrape disk and (/dev/shm|/run/shm) utilization from HTML
                 stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/dev\/shm.?\s(\d+)%?'  # noqa
-                #match_130 = re.search(stats_130_regex, login_response)
                 stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?\s+\/\w+\/shm.?\s+(\d+)%?'  # noqa
-                #match_132 = re.search(stats_132_regex, login_response)
                 match = (re.search(stats_130_regex, login_response)
                          or re.search(stats_132_regex, login_response))
                 if match:
