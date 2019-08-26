@@ -72,6 +72,7 @@ classes:
         order: 15
       # enables a frame server daemon (zmf)
       # which will be sent the images from the analysis daemon
+      # No longer a config option as of 1.32
       ZmOptFrameServer:
         label: Frame Server
         short_label: ZMF
@@ -79,7 +80,7 @@ classes:
         default: false
         enum: {true: "clear", false: "debug"}
         renderer: Zenoss.render.severity
-        grid_display: true
+        grid_display: false
         details_display: false
         label_width: 30
         order: 3
@@ -167,19 +168,23 @@ classes:
         details_display: false
       ControlId:
         label: PTZ Type
-        order: 15
+        order: 16
+      CaptureFPS:
+        label: Capture FPS
+        type: float
+        order: 12
       AnalysisFPS:
         label: Analysis FPS
         type: float
-        order: 12
+        order: 13
       MaxFPS:
         label: Max FPS
         type: float
-        order: 13
+        order: 14
       AlarmMaxFPS:
         label: Alarm Max FPS
         type: float
-        order: 14
+        order: 15
       
 
   # Different classes required for different monitor protocol health checks
