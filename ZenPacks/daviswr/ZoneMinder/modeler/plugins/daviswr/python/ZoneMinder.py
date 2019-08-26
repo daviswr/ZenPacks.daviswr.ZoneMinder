@@ -345,11 +345,8 @@ class ZoneMinder(PythonPlugin):
                 ]
 
             for key in integers:
-                value = monitor.get(key, 0)
-                if isinstance(value, int) or isinstance(value, str):
-                    monitor[key] = int(monitor.get(key, 0))
-                else:
-                    monitor[key] = 0
+                value = monitor.get(key, None)
+                monitor[key] = int(value) if value else 0
 
             color_map = {
                 '1': '8-bit grayscale',
@@ -372,13 +369,17 @@ class ZoneMinder(PythonPlugin):
                 monitor['Resolution'] = ''
 
             floats = [
+                # AnalysisFPS moved to the Monitor_Status structure in 1.32
+                # to be supported in a later ZP release
                 'AnalysisFPS',
                 'MaxFPS',
                 'AlarmMaxFPS',
                 ]
 
             for key in floats:
-                monitor[key] = float(monitor.get(key, 0.0))
+                monitor[key] = float(monitor.get(key, 0.0)) \
+                    if monitor.get(key, None) \
+                    else 0.0
 
             booleans = [
                 'Enabled',
