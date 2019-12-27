@@ -3,7 +3,7 @@ name: ZenPacks.daviswr.ZoneMinder
 class_relationships:
   - Products.ZenModel.Device.Device(zoneMinder) 1:MC ZoneMinder(server)
   - ZoneMinder(zmMonitors) 1:MC ZMMonitor(zoneMinder)
-# These relationships will be supported in a future release
+# These relationships may be supported in a future release
 #  - ZoneMinder(zmServers) 1:MC ZMServer(zoneMinder)
 #  - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
 
@@ -59,12 +59,9 @@ classes:
         short_label: FFmpeg
         type: boolean
         default: false
-        enum: {true: "clear", false: "debug"}
-        renderer: Zenoss.render.severity
-        grid_display: true
-        details_display: false
+        details_display: true
         label_width: 40
-        order: 5
+        order: 16
       # Maximum number of log entries to retain
       ZmLogDatabaseLimit:
         label: Log Database Limit
@@ -73,30 +70,25 @@ classes:
       # enables a frame server daemon (zmf)
       # which will be sent the images from the analysis daemon
       # No longer a config option as of 1.32
+      # Deprecated: Will remove from ZenPack before 1.0
       ZmOptFrameServer:
         label: Frame Server
         short_label: ZMF
         type: boolean
         default: false
-        enum: {true: "clear", false: "debug"}
-        renderer: Zenoss.render.severity
-        grid_display: false
         details_display: false
         label_width: 30
-        order: 3
+        order: 20
       # Support controllable (e.g. PTZ) cameras
       ZmOptControl:
         label: PTZ Support
         short_label: PTZ
         type: boolean
         default: false
-        enum: {true: "clear", false: "debug"}
-        renderer: Zenoss.render.severity
-        grid_display: true
-        details_display: false
+        details_display: true
         label_width: 30
-        order: 4
-      
+        order: 17
+
 
   ZMMonitor:
     label: ZoneMinder Monitor
@@ -116,7 +108,6 @@ classes:
         details_display: false
       MonitorType:
         label: Type
-        grid_display: true
         order : 9
       Function:
         grid_display: true
@@ -135,7 +126,6 @@ classes:
       Method:
         order: 7
       Host:
-        # Will have to remove passwords
         grid_display: true
         order: 3
       Port:
@@ -149,7 +139,7 @@ classes:
       Resolution:
         # Assembled from Width and Height attributes
         details_display: true
-        order: 10 
+        order: 10
       Width:
         type: int
         details_display: false
@@ -169,14 +159,6 @@ classes:
       ControlId:
         label: PTZ Type
         order: 16
-      CaptureFPS:
-        label: Capture FPS
-        type: float
-        order: 12
-      AnalysisFPS:
-        label: Analysis FPS
-        type: float
-        order: 13
       MaxFPS:
         label: Max FPS
         type: float
@@ -184,34 +166,26 @@ classes:
       AlarmMaxFPS:
         label: Alarm Max FPS
         type: float
-        order: 15
-      
-
-  # Different classes required for different monitor protocol health checks
-  # These subclasses/templates will be supported in a future release
-  #ZMIpMonitor:
-  #  base: [ZMMonitor]
-  #  label: ZoneMinder IP Monitor
-  #  short_label: IP Monitor
-
-  #ZMHttpMonitor:
-  #  base: [ZMMonitor]
-  #  label: ZoneMinder HTTP Monitor
-  #  short_label: HTTP Monitor
-
-  #ZMRtspMonitor:
-  #  base: [ZMMonitor]
-  #  label: ZoneMinder RTSP Monitor
-  #  short_label: RTSP Monitor
+        details_display: false
+      # Deprecated: Will remove from ZenPack before 1.0
+      CaptureFPS:
+        label: Capture FPS
+        type: float
+        details_display: false
+      # Deprecated: Will remove from ZenPack before 1.0
+      AnalysisFPS:
+        label: Analysis FPS
+        type: float
+        details_display: false
 
 
-  # These relationships will be supported in a future release
+  # These relationships may be supported in a future release
   ZMServer:
     label: ZoneMinder Server
     short_label: ZM Server
     properties:
       DEFAULTS:
-        grid_display: false 
+        grid_display: false
       Hostname:
         type: string
         grid_display: true
@@ -322,6 +296,7 @@ device_classes:
               devshm: GAUGE
               state: GAUGE
               events: GAUGE
+              bandwidth: GAUGE
 
         thresholds:
           Daemon-Status:
@@ -378,6 +353,17 @@ device_classes:
                 lineWidth: 2
                 colorindex: 1
 
+          ZM Total Bandwidth:
+            units: bits/sec
+            base: true
+            graphpoints:
+              Capturing:
+                dpName: Daemon_bandwidth
+                rpn: 8,*
+                lineType: AREA
+                stacked: true
+                colorindex: 0
+
           ZM Total Events:
             units: events/min
             graphpoints:
@@ -402,6 +388,9 @@ device_classes:
               events: GAUGE
               enabled: GAUGE
               online: GAUGE
+              CaptureFPS: GAUGE
+              AnalysisFPS: GAUGE
+              CaptureBandwidth: GAUGE
 
         thresholds:
           Monitor-Status:
@@ -437,6 +426,32 @@ device_classes:
         graphs:
           DEFAULTS:
             miny: 0
+          ZM Monitor Framerate:
+            units: frames/sec
+            graphpoints:
+              Capture FPS:
+                dpName: Monitor_CaptureFPS
+                lineType: AREA
+                lineWidth: 2
+                stacked: true
+                colorindex: 0
+              Analysis FPS:
+                dpName: Monitor_AnalysisFPS
+                lineType: LINE
+                lineWidth: 2
+                colorindex: 1
+
+          ZM Monitor Bandwidth:
+            units: bits/sec
+            base: true
+            graphpoints:
+              Capturing:
+                dpName: Monitor_CaptureBandwidth
+                rpn: 8,*
+                lineType: AREA
+                stacked: true
+                colorindex: 0
+
           ZM Monitor Events:
             units: events/min
             graphpoints:
@@ -446,6 +461,7 @@ device_classes:
                 lineType: LINE
                 lineWidth: 2
                 colorindex: 0
+
 
 event_classes:
   /Status/ZoneMinder:
@@ -457,29 +473,29 @@ event_classes:
           SEVERITY_WARNING,
           SEVERITY_ERROR
           )
-      
+
       current = int(float(evt.current))
       states = {
           0: 'is not running',
           1: 'is running',
           }
       state = states.get(current, 'status is unknown')
-      
+
       severities = dict()
-      
+
       if evt.eventKey.endswith('Daemon-Status'):
           evt.summary = 'ZoneMinder daemon {0}'.format(state)
           severities = {
               0: SEVERITY_ERROR,
               1: SEVERITY_CLEAR,
               }
-      
+
       elif evt.eventKey.endswith('Daemon-RunState'):
           # Run State has changed, remodel to get new monitor functions
           # Model in background so transform isn't delayed
           device.collectDevice(background=True)
           evt._action = 'history'
-      
+
       elif 'Monitor' in evt.eventKey:
           monitor_id = evt.component.replace('zmMonitor', '')
           severities = {
@@ -502,12 +518,12 @@ event_classes:
                   }
               enabled = enabled_map.get(current, 'unknown')
               evt.summary = 'ZM monitor {0} is {1}'.format(monitor_id, enabled)
-      
+
               @transact
               def updateDb():
                   component.Enabled = True if 1 == current else False
               updateDb()
-      
+
       if 'Daemon-RunState' not in evt.eventKey:
           # ZPL Components look for events in /Status rather than
           # /Status/ClassName to determine up/down status

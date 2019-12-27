@@ -122,12 +122,32 @@ class Daemon(PythonDataSourcePlugin):
                 output = dict()
 
                 # Scrape disk and (/dev/shm|/run/shm) utilization from HTML
-                stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/dev\/shm.?\s(\d+)%?'  # noqa
+                stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/w+\/shm.?\s(\d+)%?'  # noqa
                 stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?\s+\/\w+\/shm.?\s+(\d+)%?'  # noqa
                 match = (re.search(stats_130_regex, login_response)
                          or re.search(stats_132_regex, login_response))
                 if match:
                     output['console'] = match.groups()
+
+                # Scrape total capture bandwidth from HTML
+                bandwidth_regex = r'<td class="colFunction">(\S+)B\/s'
+                match = re.search(bandwidth_regex, login_response)
+                if match:
+                    bandwidth_str = match.groups()[0]
+                    if bandwidth_str[-1] not in '0123456789':
+                        unit_multi = {
+                            'K': 1000,
+                            'M': 1000000,
+                            'G': 1000000000,
+                            }
+                        bandwidth = float(bandwidth_str[:-1])
+                        bandwidth = bandwidth * unit_multi.get(
+                            bandwidth_str[-1],
+                            1
+                            )
+                    else:
+                        bandwidth = float(bandwidth_str)
+                    output['bandwidth'] = bandwidth
 
                 # Daemon status
                 response = yield getPage(
@@ -191,6 +211,9 @@ class Daemon(PythonDataSourcePlugin):
             console = output.get('console', list())
             if len(console) >= 2:
                 (stats['disk'], stats['devshm']) = console
+
+            if 'bandwidth' in output:
+                stats['bandwidth'] = output.get('bandwidth')
 
             # Event counts ("results", plural)
             events = output.get('results', list())
@@ -333,6 +356,7 @@ class Monitor(PythonDataSourcePlugin):
                     LOG.error('%s: No cookies received', config.id)
                     returnValue(None)
 
+                # Scrape monitor online status from HTML
                 watch_id = 'zmWatch{0}'.format(comp_id)
                 if watch_id in login_response:
                     watch_index = -1
@@ -397,10 +421,27 @@ class Monitor(PythonDataSourcePlugin):
                 stats['online'] = output['online']
 
             monitor = output.get('monitor', dict()).get('Monitor', dict())
+
             if len(monitor) > 0:
                 stats['enabled'] = monitor.get('Enabled', '0')
 
+            # 1.30 Framerates
+            if 'CaptureFPS' in monitor:
+                stats['CaptureFPS'] = monitor['CaptureFPS']
+            if 'AnalysisFPS' in monitor:
+                stats['AnalysisFPS'] = monitor['AnalysisFPS']
+
+            # 1.32 Monitor Status
+            stats.update(output.get('monitor', dict()).get(
+                'Monitor_Status',
+                dict()
+                ))
+
+            # 1.30
             stats['status'] = 1 if output.get('status') else 0
+            # 1.32
+            stats['status'] = 1 if stats.get('Status', '') == 'Connected' \
+                else 0
 
             events = output.get('results', list())
             # "results" will be an empty *list* if no monitors have events
