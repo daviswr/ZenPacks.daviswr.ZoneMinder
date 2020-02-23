@@ -80,16 +80,19 @@ class ZoneMinder(PythonPlugin):
         # Pre-1.32 compatibility
         login_params = urllib.urlencode({
             'action': 'login',
-            'view': 'postlogin',
+            'view': 'login',
             'username': username,
             'password': password,
+            # 1.34+ requires OPT_USE_LEGACY_API_AUTH
+            'stateful': 1,
             })
         login_url = '{0}index.php?{1}'.format(base_url, login_params)
         api_url = '{0}api/'.format(base_url)
+        # log.debug('%s: ZoneMinder URL:%s', device.id, login_url)
 
         cookies = dict()
-        # Attempt login
         try:
+            # Attempt login
             response = yield getPage(login_url, method='POST', cookies=cookies)
 
             if 'Invalid username or password' in response:
@@ -369,9 +372,6 @@ class ZoneMinder(PythonPlugin):
                 monitor['Resolution'] = ''
 
             floats = [
-                # AnalysisFPS moved to the Monitor_Status structure in 1.32
-                # to be supported in a later ZP release
-                'AnalysisFPS',
                 'MaxFPS',
                 'AlarmMaxFPS',
                 ]

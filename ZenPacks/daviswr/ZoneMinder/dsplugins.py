@@ -45,7 +45,7 @@ class Daemon(PythonDataSourcePlugin):
         data = self.new_data()
 
         for datasource in config.datasources:
-            #LOG.debug('%s: parameters\n%s', config.id, datasource.params)
+            # LOG.debug('%s: parameters\n%s', config.id, datasource.params)
             username = datasource.params['username']
             password = datasource.params['password']
             hostname = datasource.params['hostname']
@@ -93,9 +93,11 @@ class Daemon(PythonDataSourcePlugin):
 
             login_params = urllib.urlencode({
                 'action': 'login',
-                'view': 'console',
+                'view': 'login',
                 'username': username,
                 'password': password,
+                # 1.34+ requires OPT_USE_LEGACY_API_AUTH
+                'stateful': 1,
                 })
             login_url = '{0}index.php?{1}'.format(base_url, login_params)
             api_url = '{0}api/'.format(base_url)
@@ -121,17 +123,36 @@ class Daemon(PythonDataSourcePlugin):
 
                 output = dict()
 
+                # Console
+                # Session cookies on 1.34 require view=login on action=login
+                # This returns a 302 to the console page
+                # rather than just the console
+                response = yield getPage(
+                    '{0}index.php?view=console'.format(base_url),
+                    method='GET',
+                    cookies=cookies
+                    )
+
                 # Scrape disk and (/dev/shm|/run/shm) utilization from HTML
                 stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/w+\/shm.?\s(\d+)%?'  # noqa
-                stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?\s+\/\w+\/shm.?\s+(\d+)%?'  # noqa
-                match = (re.search(stats_130_regex, login_response)
-                         or re.search(stats_132_regex, login_response))
+                stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?.*\/\w+\/shm.?\s+(\d+)%?'  # noqa
+                storage_regex = r'Storage.?\s+(\d+)%?'
+                shm_regex = r'/\w+\/shm.?\s+(\d+)%?'
+                match = (re.search(stats_130_regex, response)
+                         or re.search(stats_132_regex, response))
                 if match:
                     output['console'] = match.groups()
+                else:
+                    storage_match = re.search(storage_regex, response)
+                    shm_match = re.search(shm_regex, response)
+                    output['console'] = [
+                        storage_match.groups()[0] if storage_match else '',
+                        shm_match.groups()[0] if shm_match else '',
+                        ]
 
                 # Scrape total capture bandwidth from HTML
                 bandwidth_regex = r'<td class="colFunction">(\S+)B\/s'
-                match = re.search(bandwidth_regex, login_response)
+                match = re.search(bandwidth_regex, response)
                 if match:
                     bandwidth_str = match.groups()[0]
                     if bandwidth_str[-1] not in '0123456789':
@@ -277,7 +298,7 @@ class Monitor(PythonDataSourcePlugin):
             }
 
         for datasource in config.datasources:
-            #LOG.debug('%s: parameters\n%s', config.id, datasource.params)
+            # LOG.debug('%s: parameters\n%s', config.id, datasource.params)
             username = datasource.params['username']
             password = datasource.params['password']
             hostname = datasource.params['hostname']
@@ -325,9 +346,11 @@ class Monitor(PythonDataSourcePlugin):
 
             login_params = urllib.urlencode({
                 'action': 'login',
-                'view': 'console',
+                'view': 'login',
                 'username': username,
                 'password': password,
+                # 1.34+ requires OPT_USE_LEGACY_API_AUTH
+                'stateful': 1,
                 })
             login_url = '{0}index.php?{1}'.format(base_url, login_params)
             api_url = '{0}api/'.format(base_url)
@@ -356,17 +379,43 @@ class Monitor(PythonDataSourcePlugin):
                     LOG.error('%s: No cookies received', config.id)
                     returnValue(None)
 
+                # Console
+                # Session cookies on 1.34 require view=login on action=login
+                # This returns a 302 to the console page
+                # rather than just the console
+                response = yield getPage(
+                    '{0}index.php?view=console'.format(base_url),
+                    method='GET',
+                    cookies=cookies
+                    )
+
                 # Scrape monitor online status from HTML
-                watch_id = 'zmWatch{0}'.format(comp_id)
-                if watch_id in login_response:
+                if 'zmWatch' in response:
+                    # 1.30
+                    watch_prefix = 'zmWatch'
+                    watch_offset = 2
+                elif 'zmMonitor' in response:
+                    # 1.34
+                    watch_prefix = 'zmMonitor'
+                    watch_offset = 0
+                elif 'monitor_id-' in response:
+                    # 1.32
+                    watch_prefix = 'monitor_id-'
+                    watch_offset = 9
+                else:
+                    watch_prefix = ''
+
+                watch_id = watch_prefix + comp_id
+
+                if watch_id in response:
                     watch_index = -1
-                    console = login_response.split('\n')
+                    console = response.split('\n')
                     for ii in range(0, len(console) - 1):
                         if watch_id in console[ii]:
                             watch_index = ii
                             break
                     if watch_index > -1:
-                        online_line = console[watch_index + 2]
+                        online_line = console[watch_index + watch_offset]
                         online_match = re.search(online_regex, online_line)
                         if online_match:
                             online_state = online_match.groups()[0]
