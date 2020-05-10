@@ -143,12 +143,12 @@ class ZoneMinder(PythonPlugin):
             output.update(json.loads(response))
 
             # Servers
-            response = yield getPage(
-                api_url + 'servers.json',
-                method='GET',
-                cookies=cookies
-                )
-            output.update(json.loads(response))
+            # response = yield getPage(
+            #     api_url + 'servers.json',
+            #     method='GET',
+            #     cookies=cookies
+            #     )
+            # output.update(json.loads(response))
 
             # Log out
             yield getPage(
