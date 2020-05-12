@@ -4,15 +4,17 @@ import json
 import re
 import urllib
 
-from twisted.internet.defer \
-    import inlineCallbacks, returnValue
-from twisted.web.client \
-    import getPage
+from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.web.client import getPage
 
-from Products.DataCollector.plugins.CollectorPlugin \
-    import PythonPlugin
-from Products.DataCollector.plugins.DataMaps \
-    import MultiArgs, RelationshipMap, ObjectMap
+from Products.DataCollector.plugins.CollectorPlugin import PythonPlugin
+from Products.DataCollector.plugins.DataMaps import (
+    MultiArgs,
+    RelationshipMap,
+    ObjectMap
+    )
+
+from ZenPacks.daviswr.ZoneMinder.lib import zmUtil
 
 
 class ZoneMinder(PythonPlugin):
@@ -40,36 +42,23 @@ class ZoneMinder(PythonPlugin):
 
         username = getattr(device, 'zZoneMinderUsername', None)
         password = getattr(device, 'zZoneMinderPassword', None)
-        if not username or not password or len(username) == 0:
+        if not username or not password:
             log.error(
                 '%s: zZoneMinderUsername or zZoneMinderPassword not set',
                 device.id
                 )
             returnValue(None)
 
-        base_url = getattr(device, 'zZoneMinderURL', None)
-        # If custom URL not provided, assemble one
-        if not base_url:
-            hostname = getattr(device, 'zZoneMinderHostname', '')
-            if not hostname:
-                hostname = device.id or device.manageIp
-                if '.' not in hostname:
-                    hostname = hostname.replace('_', '.')
-            log.debug('%s: ZoneMinder host is %s', device.id, str(hostname))
-            port = getattr(device, 'zZoneMinderPort', 443)
-            path = getattr(device, 'zZoneMinderPath', '/zm/')
-            if not path.startswith('/'):
-                path = '/' + path
-            if not path.endswith('/'):
-                path = path + '/'
-            protocol = 'https' \
-                if getattr(device, 'zZoneMinderSSL', True) else 'http'
-            base_url = '{0}://{1}:{2}{3}'.format(
-                protocol,
-                hostname,
-                port,
-                path
-                )
+        base_url = zmUtil.generate_zm_url(
+            hostname=(getattr(device, 'zZoneMinderHostname', None)
+                      or device.id
+                      or device.manageIp
+                      ),
+            port=getattr(device, 'zZoneMinderPort', 443),
+            path=getattr(device, 'zZoneMinderPath', '/zm/'),
+            ssl=getattr(device, 'zZoneMinderSSL', True),
+            url=getattr(device, 'zZoneMinderURL', None)
+            )
 
         url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
         if re.match(url_regex, base_url) is None:
@@ -101,7 +90,7 @@ class ZoneMinder(PythonPlugin):
                     device.id
                     )
                 returnValue(None)
-            elif len(cookies) == 0:
+            elif not cookies:
                 log.error('%s: No cookies received', device.id)
                 returnValue(None)
 
@@ -116,7 +105,10 @@ class ZoneMinder(PythonPlugin):
                 method='GET',
                 cookies=cookies
                 )
-            output.update(json.loads(response))
+            version_json = json.loads(response)
+            versions = zmUtil.dissect_versions(version_json)
+            # output.update(json.loads(response))
+            output.update(version_json)
 
             # Config
             response = yield getPage(
@@ -149,6 +141,18 @@ class ZoneMinder(PythonPlugin):
             #     cookies=cookies
             #     )
             # output.update(json.loads(response))
+
+            # Version-specific API calls
+            # 1.32+ required for storage.json
+            if (versions['daemon']['major'] >= 1
+                    and versions['daemon']['minor'] > 30):
+                # Storage
+                response = yield getPage(
+                    api_url + 'storage.json',
+                    method='GET',
+                    cookies=cookies
+                    )
+                output.update(json.loads(response))
 
             # Log out
             yield getPage(
@@ -402,4 +406,5 @@ class ZoneMinder(PythonPlugin):
             log.debug('%s ZoneMinder monitor:\n%s', device.id, rm)
         maps.append(rm)
 
+        # TODO: Storage volumes
         return maps

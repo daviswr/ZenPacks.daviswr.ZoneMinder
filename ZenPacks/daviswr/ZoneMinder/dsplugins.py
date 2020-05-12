@@ -7,13 +7,14 @@ import json
 import re
 import urllib
 
-from twisted.internet.defer \
-    import inlineCallbacks, returnValue
-from twisted.web.client \
-    import getPage
+from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.web.client import getPage
 
-from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource \
-    import PythonDataSourcePlugin
+from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import (
+    PythonDataSourcePlugin
+    )
+
+from ZenPacks.daviswr.ZoneMinder.lib import zmUtil
 
 
 class Daemon(PythonDataSourcePlugin):
@@ -61,24 +62,13 @@ class Daemon(PythonDataSourcePlugin):
                     )
                 returnValue(None)
 
-             # If custom URL not provided, assemble one
-            if not base_url:
-                if not hostname:
-                    hostname = config.id
-                    if '.' not in hostname:
-                        hostname = hostname.replace('_', '.')
-                port_str = ':' + str(port) if port else ''
-                if not path.startswith('/'):
-                    path = '/' + path
-                if not path.endswith('/'):
-                    path = path + '/'
-                protocol = 'https' if ssl else 'http'
-                base_url = '{0}://{1}{2}{3}'.format(
-                    protocol,
-                    hostname,
-                    port_str,
-                    path
-                    )
+            base_url = zmUtil.generate_zm_url(
+                hostname=hostname or config.id,
+                port=port or 443,
+                path=path or '/zm/',
+                ssl=ssl or True,
+                url=base_url
+                )
 
             url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
             if re.match(url_regex, base_url) is None:
@@ -117,7 +107,7 @@ class Daemon(PythonDataSourcePlugin):
                         config.id,
                         )
                     returnValue(None)
-                elif len(cookies) == 0:
+                elif not cookies:
                     LOG.error('%s: No cookies received', config.id)
                     returnValue(None)
 
@@ -134,41 +124,10 @@ class Daemon(PythonDataSourcePlugin):
                     )
 
                 # Scrape disk and (/dev/shm|/run/shm) utilization from HTML
-                stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/w+\/shm.?\s(\d+)%?'  # noqa
-                stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?.*\/\w+\/shm.?\s+(\d+)%?'  # noqa
-                storage_regex = r'Storage.?\s+(\d+)%?'
-                shm_regex = r'/\w+\/shm.?\s+(\d+)%?'
-                match = (re.search(stats_130_regex, response)
-                         or re.search(stats_132_regex, response))
-                if match:
-                    output['console'] = match.groups()
-                else:
-                    storage_match = re.search(storage_regex, response)
-                    shm_match = re.search(shm_regex, response)
-                    output['console'] = [
-                        storage_match.groups()[0] if storage_match else '',
-                        shm_match.groups()[0] if shm_match else '',
-                        ]
+                output['console'] = zmUtil.scrape_console_storage(response)
 
                 # Scrape total capture bandwidth from HTML
-                bandwidth_regex = r'<td class="colFunction">(\S+)B\/s'
-                match = re.search(bandwidth_regex, response)
-                if match:
-                    bandwidth_str = match.groups()[0]
-                    if bandwidth_str[-1] not in '0123456789':
-                        unit_multi = {
-                            'K': 1000,
-                            'M': 1000000,
-                            'G': 1000000000,
-                            }
-                        bandwidth = float(bandwidth_str[:-1])
-                        bandwidth = bandwidth * unit_multi.get(
-                            bandwidth_str[-1],
-                            1
-                            )
-                    else:
-                        bandwidth = float(bandwidth_str)
-                    output['bandwidth'] = bandwidth
+                output['bandwidth'] = zmUtil.scrape_console_bandwidth(response)
 
                 # Daemon status
                 response = yield getPage(
@@ -315,24 +274,13 @@ class Monitor(PythonDataSourcePlugin):
                     )
                 returnValue(None)
 
-             # If custom URL not provided, assemble one
-            if not base_url:
-                if not hostname:
-                    hostname = config.id
-                    if '.' not in hostname:
-                        hostname = hostname.replace('_', '.')
-                port_str = ':' + str(port) if port else ''
-                if not path.startswith('/'):
-                    path = '/' + path
-                if not path.endswith('/'):
-                    path = path + '/'
-                protocol = 'https' if ssl else 'http'
-                base_url = '{0}://{1}{2}{3}'.format(
-                    protocol,
-                    hostname,
-                    port_str,
-                    path
-                    )
+            base_url = zmUtil.generate_zm_url(
+                hostname=hostname or config.id,
+                port=port or 443,
+                path=path or '/zm/',
+                ssl=ssl or True,
+                url=base_url
+                )
 
             if re.match(url_regex, base_url) is None:
                 LOG.error('%s: %s is not a valid URL', config.id, base_url)
@@ -375,7 +323,7 @@ class Monitor(PythonDataSourcePlugin):
                         config.id,
                         )
                     returnValue(None)
-                elif len(cookies) == 0:
+                elif not cookies:
                     LOG.error('%s: No cookies received', config.id)
                     returnValue(None)
 
@@ -390,38 +338,12 @@ class Monitor(PythonDataSourcePlugin):
                     )
 
                 # Scrape monitor online status from HTML
-                if 'zmWatch' in response:
-                    # 1.30
-                    watch_prefix = 'zmWatch'
-                    watch_offset = 2
-                elif 'zmMonitor' in response:
-                    # 1.34
-                    watch_prefix = 'zmMonitor'
-                    watch_offset = 0
-                elif 'monitor_id-' in response:
-                    # 1.32
-                    watch_prefix = 'monitor_id-'
-                    watch_offset = 9
-                else:
-                    watch_prefix = ''
+                output['online'] = zmUtil.scrape_console_monitor(
+                    response,
+                    comp_id
+                    )
 
-                watch_id = watch_prefix + comp_id
-
-                if watch_id in response:
-                    watch_index = -1
-                    console = response.split('\n')
-                    for ii in range(0, len(console) - 1):
-                        if watch_id in console[ii]:
-                            watch_index = ii
-                            break
-                    if watch_index > -1:
-                        online_line = console[watch_index + watch_offset]
-                        online_match = re.search(online_regex, online_line)
-                        if online_match:
-                            online_state = online_match.groups()[0]
-                            output['online'] = online_map.get(online_state, 2)
-
-                else:
+                if not output['online']:
                     LOG.warn(
                         '%s: %s not found in ZM web console',
                         config.id,
