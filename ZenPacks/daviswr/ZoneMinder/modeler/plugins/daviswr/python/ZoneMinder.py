@@ -440,7 +440,7 @@ class ZoneMinder(PythonPlugin):
             store = volumes[store_name]
             store_id = store.get('Id')
             store_path = store.get('Path')
-            store['id'] = self.prepId('zmStorage{0}'.format(store_id))
+            store['id'] = self.prepId('zmStorage_{0}'.format(store_name))
             store['title'] = store_name
 
             if ignore_ids and store_id in ignore_ids:
