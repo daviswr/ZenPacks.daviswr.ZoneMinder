@@ -300,6 +300,8 @@ device_classes:
               state: GAUGE
               events: GAUGE
               bandwidth: GAUGE
+              db-used: GAUGE
+              db-max: GAUGE
 
         thresholds:
           Daemon-Status:
@@ -355,6 +357,21 @@ device_classes:
                 lineType: LINE
                 lineWidth: 2
                 colorindex: 1
+
+          ZM Database Connections:
+            units: connections
+            graphpoints:
+              Used:
+                dpName: Daemon_db-used
+                lineType: AREA
+                stacked: TRUE
+                colorindex: 0
+              Available:
+                dpName: Daemon_db-max
+                rpn: Used,-,CEIL
+                lineType: AREA
+                stacked: TRUE
+                color: cccccc
 
           ZM Total Bandwidth:
             units: bits/sec

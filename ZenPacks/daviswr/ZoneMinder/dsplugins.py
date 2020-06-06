@@ -126,6 +126,9 @@ class Daemon(PythonDataSourcePlugin):
                 # Scrape disk and (/dev/shm|/run/shm) utilization from HTML
                 output['console'] = zmUtil.scrape_console_storage(response)
 
+                # Scrape DB connection counts from HTML
+                output['db'] = zmUtil.scrape_console_db(response)
+
                 # Scrape total capture bandwidth from HTML
                 output['bandwidth'] = zmUtil.scrape_console_bandwidth(response)
 
@@ -188,8 +191,8 @@ class Daemon(PythonDataSourcePlugin):
             if len(load) >= 3:
                 (stats['load-1'], stats['load-5'], stats['load-15']) = load
 
-            console = output.get('console', dict())
-            stats.update(console)
+            for category in ['console', 'db']:
+                stats.update(output.get(category, dict()))
 
             if 'bandwidth' in output:
                 stats['bandwidth'] = output.get('bandwidth')
@@ -249,11 +252,6 @@ class Monitor(PythonDataSourcePlugin):
         data = self.new_data()
 
         url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
-        online_regex = r'<td class="colSource">.*<span class="(\w+)Text">'
-        online_map = {
-            'error': 0,
-            'info': 1,
-            }
 
         for datasource in config.datasources:
             # LOG.debug('%s: parameters\n%s', config.id, datasource.params)

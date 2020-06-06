@@ -61,7 +61,7 @@ def generate_zm_url(hostname=None,
 
 
 def scrape_console_bandwidth(html):
-    """ Scrapes total capture bandwidth from HTML """
+    """ Scrapes total capture bandwidth from Console page HTML """
     bandwidth_regex = r'<td class="colFunction">(\S+)B\/s'
     match = re.search(bandwidth_regex, html)
     if match:
@@ -69,8 +69,9 @@ def scrape_console_bandwidth(html):
         if bandwidth_str[-1] not in '0123456789':
             unit_multi = {
                 'K': 1000,
-                'M': 1000000,
-                'G': 1000000000,
+                'M': 1000**2,
+                'G': 1000**3,
+                'T': 1000**4,
                 }
             bandwidth = float(bandwidth_str[:-1])
             bandwidth = bandwidth * unit_multi.get(
@@ -83,6 +84,16 @@ def scrape_console_bandwidth(html):
         bandwidth = ''
 
     return bandwidth
+
+
+def scrape_console_db(html):
+    """ Scrapes DB connection count from Console page HTML """
+    db_regex = r'DB:(\d+)/(\d+)'
+    db_match = re.search(db_regex, html)
+    return {
+        'db-used': db_match.groups()[0] if db_match else '',
+        'db-max': db_match.groups()[1] if db_match else '',
+        }
 
 
 def scrape_console_monitor(html, monitor_id):
@@ -129,27 +140,91 @@ def scrape_console_monitor(html, monitor_id):
 
 
 def scrape_console_storage(html):
-    """ Scrape disk and (/dev/shm|/run/shm) utilization from HTML """
-    # TODO: Report multiple storage volumes
+    """ Scrape disk and SHM utilization from Console page HTML """
 
     stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/w+\/shm.?\s(\d+)%?'  # noqa
-    stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?.*\/\w+\/shm.?\s+(\d+)%?'  # noqa
-    storage_regex = r'Storage.?\s+(\d+)%?'
+    # stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?.*\/\w+\/shm.?\s+(\d+)%?'  # noqa
+    # Old Storage Example:
+    # Storage: 94%
+    old_storage_regex = r'Storage.?\s+(\d+)%?'
+    # SHM Example:
+    # <span class="">/run/shm: 34%</span></li>
     shm_regex = r'/\w+\/shm.?\s+(\d+)%?'
 
-    match = (re.search(stats_130_regex, html)
-             or re.search(stats_132_regex, html))
+    match = re.search(stats_130_regex, html)
     if match:
+        # 1.30
         console = {
-            'disk': match.groups()[0],
-            'devshm': match.groups()[1],
+            'disk': int(match.groups()[0]),
+            'devshm': int(match.groups()[1]),
             }
     else:
-        storage_match = re.search(storage_regex, html)
+        # 1.32 or later
+        old_storage_match = re.search(old_storage_regex, html)
         shm_match = re.search(shm_regex, html)
+
         console = {
-            'disk': storage_match.groups()[0] if storage_match else '',
+            'disk': old_storage_match.groups()[0] if old_storage_match else '',
             'devshm': shm_match.groups()[0] if shm_match else '',
             }
 
     return console
+
+
+def scrape_console_volumes(html):
+    """ Scrapes storage volume information from HTML """
+
+    multiplier = {
+        'B': 1,
+        'KB': 1024,
+        'MB': 1024**2,
+        'GB': 1024**3,
+        'TB': 1024**4,
+        'PB': 1024**5,
+        'EB': 1024**6,
+        'ZB': 1024**7,
+        'YB': 1024**8,
+        }
+
+    # Storage volume Example:
+    # <span class="" title="390.06GB of 2.69TB 249.93GB used by events">Storage2: 14%</span>  # noqa
+    stores_regex = r'(\d+\.?\d*)(\w?B) of (\d+\.?\d*)(\w?B) (\d+\.?\d*)(\w?B) used by events.*\>(\w+):\s+(\d+)%'  # noqa
+    disk130_regex = r'Disk.?\s+(\d+)%'
+    stores = dict()
+
+    store_matches = re.findall(stores_regex, html)
+    for store_match in store_matches:
+        # store_match tuple example:
+        # ('3.37', 'TB', '3.58', 'TB', '2.6', 'TB', 'Default', '94')
+        store_name = store_match[6]
+        store = {
+            'used': float(store_match[0]) * multiplier.get(store_match[1]),
+            'total': float(store_match[2]) * multiplier.get(store_match[3]),
+            'events': float(store_match[4]) * multiplier.get(store_match[5]),
+            'percent': store_match[7],
+            }
+        for metric in store:
+            store[metric] = int(store[metric])
+
+        stores[store_name] = store
+
+    # A volume named Default can be a dopplerganger of another volume,
+    # but the event storage metric is associated with it instead of
+    # the actual storage volume
+    if 'Default' in stores:
+        for store in stores:
+            if (store != 'Default'
+                    and 0 == stores[store]['events']
+                    and stores[store]['used'] == stores['Default']['used']
+                    and stores[store]['total'] == stores['Default']['total']):  # noqa
+                stores[store]['events'] = stores['Default']['events']
+                del stores['Default']
+                break
+
+    # Fake a storage volume based on 1.30's disk utilization percentage
+    if not stores:
+        disk_match = re.search(disk130_regex, html)
+        if disk_match:
+            stores['Default'] = {'percent': int(disk_match.groups()[0])}
+
+    return stores
