@@ -31,6 +31,9 @@ class ZoneMinder(PythonPlugin):
         'zZoneMinderIgnoreMonitorId',
         'zZoneMinderIgnoreMonitorName',
         'zZoneMinderIgnoreMonitorHostname',
+        'zZoneMinderIgnoreStorageId',
+        'zZoneMinderIgnoreStorageName',
+        'zZoneMinderIgnoreStoragePath',
         )
 
     deviceProperties = PythonPlugin.deviceProperties + requiredProperties
@@ -107,7 +110,6 @@ class ZoneMinder(PythonPlugin):
                 )
             version_json = json.loads(response)
             versions = zmUtil.dissect_versions(version_json)
-            # output.update(json.loads(response))
             output.update(version_json)
 
             # Config
@@ -134,6 +136,14 @@ class ZoneMinder(PythonPlugin):
                 )
             output.update(json.loads(response))
 
+            # Storage Volumes
+            response = yield getPage(
+                '{0}index.php?view=console'.format(base_url),
+                method='GET',
+                cookies=cookies
+                )
+            output['volumes'] = zmUtil.scrape_console_volumes(response)
+
             # Servers
             # response = yield getPage(
             #     api_url + 'servers.json',
@@ -145,7 +155,7 @@ class ZoneMinder(PythonPlugin):
             # Version-specific API calls
             # 1.32+ required for storage.json
             if (versions['daemon']['major'] >= 1
-                    and versions['daemon']['minor'] > 30):
+                    and versions['daemon']['minor'] >= 32):
                 # Storage
                 response = yield getPage(
                     api_url + 'storage.json',
@@ -230,8 +240,6 @@ class ZoneMinder(PythonPlugin):
             monitor['id'] = self.prepId('zmMonitor{0}'.format(monitor_id))
             monitor['title'] = monitor_name
 
-            ignore_match = re.search(ignore_names, monitor_name)
-
             if ignore_ids and monitor_id in ignore_ids:
                 log.info(
                     '%s: Skipping monitor %s in zZoneMinderIgnoreMonitorId',
@@ -239,7 +247,7 @@ class ZoneMinder(PythonPlugin):
                     monitor_id
                     )
                 continue
-            elif ignore_names and ignore_match:
+            elif ignore_names and re.search(ignore_names, monitor_name):
                 log.info(
                     '%s: Skipping %s in zZoneMinderIgnoreMonitorName',
                     device.id,
@@ -406,5 +414,67 @@ class ZoneMinder(PythonPlugin):
             log.debug('%s ZoneMinder monitor:\n%s', device.id, rm)
         maps.append(rm)
 
-        # TODO: Storage volumes
+        # Storage Volumes
+        rm = RelationshipMap(
+            compname='zoneMinder/ZoneMinder',
+            relname='zmStorage',
+            modname='ZenPacks.daviswr.ZoneMinder.ZMStorage'
+            )
+        ignore_ids = getattr(device, 'zZoneMinderIgnoreStorageId', list())
+        ignore_names = getattr(device, 'zZoneMinderIgnoreStorageName', '')
+        ignore_paths = getattr(device, 'zZoneMinderIgnoreStoragePath', '')
+
+        volumes = results.get('volumes', dict())
+
+        # Combine storage info from API with that scraped from Console
+        for item in results.get('storage', list()):
+            store = item['Storage']
+            if store['Name'] in volumes:
+                volumes[store['Name']].update(store)
+                if volumes[store['Name']]['DiskSpace']:
+                    volumes[store['Name']]['events'] = int(
+                        volumes[store['Name']]['DiskSpace']
+                        )
+
+        for store_name in volumes:
+            store = volumes[store_name]
+            store_id = store.get('Id')
+            store_path = store.get('Path')
+            store['id'] = self.prepId('zmStorage{0}'.format(store_id))
+            store['title'] = store_name
+
+            if ignore_ids and store_id in ignore_ids:
+                log.info(
+                    '%s: Skipping storage %s in zZoneMinderIgnoreStorageId',
+                    device.id,
+                    store_id
+                    )
+                continue
+            elif ignore_names and re.search(ignore_names, store_name):
+                log.info(
+                    '%s: Skipping %s in zZoneMinderIgnoreStorageName',
+                    device.id,
+                    monitor_name
+                    )
+                continue
+            elif ignore_paths and re.search(ignore_paths, store_path):
+                log.info(
+                    '%s: Skipping %s in zZoneMinderIgnoreStoragePath',
+                    device.id,
+                    monitor_name
+                    )
+                continue
+
+            if 'total' in store:
+                store['DiskSpace'] = store['total']
+
+            store['StorageType'] = store.get('Type', None)
+
+            rm.append(ObjectMap(
+                modname='ZenPacks.daviswr.ZoneMinder.ZMStorage',
+                data=store
+                ))
+            log.debug('%s ZoneMinder storage:\n%s', device.id, rm)
+        maps.append(rm)
+
         return maps

@@ -184,6 +184,10 @@ classes:
     short_label: ZM Storage
     plural_label: ZoneMinder Storage
     plural_short_label: ZM Storage
+    relationships:
+      zoneMinder:
+        grid_display: false
+        details_display: false
     properties:
       DEFAULTS:
         type: string
@@ -193,11 +197,13 @@ classes:
         label: Path
         grid_display: true
         order: 2
+        label_width: 256
       StorageType:
         label: Type
         order: 3
       Url:
         label: URL
+        details_display: false
         order: 4
       DiskSpace:
         # The API uses this to report space used by events,
@@ -214,10 +220,12 @@ classes:
         label: Server ID
         type: int
         default: 0
+        details_display: false
         order: 7
       DoDelete:
         label: Do-Delete
         type: boolean
+        details_display: false
         order: 8
 
 
