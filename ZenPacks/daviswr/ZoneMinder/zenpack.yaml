@@ -3,9 +3,9 @@ name: ZenPacks.daviswr.ZoneMinder
 class_relationships:
   - Products.ZenModel.Device.Device(zoneMinder) 1:MC ZoneMinder(server)
   - ZoneMinder(zmMonitors) 1:MC ZMMonitor(zoneMinder)
+  - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
 # These relationships may be supported in a future release
 #  - ZoneMinder(zmServers) 1:MC ZMServer(zoneMinder)
-#  - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
 
 classes:
   DEFAULTS:
@@ -92,7 +92,7 @@ classes:
 
   ZMMonitor:
     label: ZoneMinder Monitor
-    short_label: Monitor
+    short_label: ZM Monitor
     relationships:
       zoneMinder:
         grid_display: false
@@ -179,7 +179,49 @@ classes:
         details_display: false
 
 
-  # These relationships may be supported in a future release
+  ZMStorage:
+    label: ZoneMinder Storage
+    short_label: ZM Storage
+    plural_label: ZoneMinder Storage
+    plural_short_label: ZM Storage
+    properties:
+      DEFAULTS:
+        type: string
+        grid_display: false
+        details_display: true
+      Path:
+        label: Path
+        grid_display: true
+        order: 2
+      StorageType:
+        label: Type
+        order: 3
+      Url:
+        label: URL
+        order: 4
+      DiskSpace:
+        # The API uses this to report space used by events,
+        # but will be used here to represent the size of the volume
+        label: Disk Space
+        type: int
+        renderer: Zenoss.render.bytesString
+        grid_display: true
+        order: 5
+      Scheme:
+        label: Scheme
+        order: 6
+      ServerId:
+        label: Server ID
+        type: int
+        default: 0
+        order: 7
+      DoDelete:
+        label: Do-Delete
+        type: boolean
+        order: 8
+
+
+  # This relationships may be supported in a future release
   ZMServer:
     label: ZoneMinder Server
     short_label: ZM Server
@@ -206,45 +248,6 @@ classes:
         label: Trigger
         type: boolean
         default: false
-
-  ZMStorage:
-    label: ZoneMinder Storage
-    short_label: ZM Storage
-    plural_label: ZoneMinder Storage
-    plural_short_label: ZM Storage
-    properties:
-      DEFAULTS:
-        type: string
-        grid_display: false
-        details_display: true
-      Path:
-        label: Path
-        grid_display: true
-        order: 2
-      StorageType:
-        label: Type
-        order: 3
-      Url:
-        label: URL
-        order: 4
-      DiskSpace:
-        label: Disk Space
-        type: int
-        renderer: Zenoss.render.bytesString
-        grid_display: true
-        order: 5
-      Scheme:
-        label: Scheme
-        order: 6
-      ServerId:
-        label: Server ID
-        type: int
-        default: 0
-        order: 7
-      DoDelete:
-        label: Do-Delete
-        type: boolean
-        order: 8
 
 
 zProperties:

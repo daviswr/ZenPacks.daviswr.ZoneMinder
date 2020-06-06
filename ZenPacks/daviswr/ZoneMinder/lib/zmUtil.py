@@ -140,13 +140,16 @@ def scrape_console_storage(html):
     match = (re.search(stats_130_regex, html)
              or re.search(stats_132_regex, html))
     if match:
-        console = match.groups()
+        console = {
+            'disk': match.groups()[0],
+            'devshm': match.groups()[1],
+            }
     else:
         storage_match = re.search(storage_regex, html)
         shm_match = re.search(shm_regex, html)
-        console = [
-            storage_match.groups()[0] if storage_match else '',
-            shm_match.groups()[0] if shm_match else '',
-            ]
+        console = {
+            'disk': storage_match.groups()[0] if storage_match else '',
+            'devshm': shm_match.groups()[0] if shm_match else '',
+            }
 
     return console

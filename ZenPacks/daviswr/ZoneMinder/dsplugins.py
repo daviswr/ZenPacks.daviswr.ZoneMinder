@@ -188,9 +188,8 @@ class Daemon(PythonDataSourcePlugin):
             if len(load) >= 3:
                 (stats['load-1'], stats['load-5'], stats['load-15']) = load
 
-            console = output.get('console', list())
-            if len(console) >= 2:
-                (stats['disk'], stats['devshm']) = console
+            console = output.get('console', dict())
+            stats.update(console)
 
             if 'bandwidth' in output:
                 stats['bandwidth'] = output.get('bandwidth')
