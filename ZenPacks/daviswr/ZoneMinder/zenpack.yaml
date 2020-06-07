@@ -284,6 +284,12 @@ zProperties:
     type: string
   zZoneMinderIgnoreMonitorHostname:
     type: string
+  zZoneMinderIgnoreStorageId:
+    type: list
+  zZoneMinderIgnoreStorageName:
+    type: string
+  zZoneMinderIgnoreStoragePath:
+    type: string
 
 
 device_classes:
