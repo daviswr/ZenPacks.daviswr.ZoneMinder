@@ -491,6 +491,56 @@ device_classes:
                 colorindex: 0
 
 
+      ZoneMinderStorage:
+        targetPythonClass: ZenPacks.daviswr.ZoneMinder.ZMStorage
+
+        datasources:
+          Storage:
+            type: Python
+            plugin_classname: ZenPacks.daviswr.ZoneMinder.dsplugins.Storage
+            cycletime: 300
+            datapoints:
+              used: GAUGE
+              total: GAUGE
+              events: GAUGE
+              percent: GAUGE
+
+        graphs:
+          DEFAULTS:
+            miny: 0
+          ZM Storage Percentage:
+            units: percentage
+            maxy: 100
+            graphpoints:
+              Used:
+                dpName: Storage_percent
+                lineType: AREA
+                stacked: true
+                colorindex: 0
+
+          ZM Storage Detail:
+            units: bytes
+            base: true
+            graphpoints:
+              Used:
+                dpName: Storage_used
+                lineType: AREA
+                stacked: true
+                colorindex: 0
+              Available:
+                dpName: Storage_total
+                rpn: Used,-
+                lineType: AREA
+                stacked: TRUE
+                color: cccccc
+              Events:
+                dpName: Storage_events
+                lineType: LINE
+                lineWidth: 2
+                stacked: false
+                colorindex: 1
+
+
 event_classes:
   /Status/ZoneMinder:
     remove: true

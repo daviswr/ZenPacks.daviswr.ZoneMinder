@@ -431,10 +431,6 @@ class ZoneMinder(PythonPlugin):
             store = item['Storage']
             if store['Name'] in volumes:
                 volumes[store['Name']].update(store)
-                if volumes[store['Name']]['DiskSpace']:
-                    volumes[store['Name']]['events'] = int(
-                        volumes[store['Name']]['DiskSpace']
-                        )
 
         for store_name in volumes:
             store = volumes[store_name]
