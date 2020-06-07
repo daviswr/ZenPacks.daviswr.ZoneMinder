@@ -309,7 +309,6 @@ device_classes:
               load-1: GAUGE
               load-5: GAUGE
               load-15: GAUGE
-              disk: GAUGE
               devshm: GAUGE
               state: GAUGE
               events: GAUGE
@@ -357,22 +356,17 @@ device_classes:
                 lineWidth: 1
                 colorindex: 2
 
-          ZM Daemon Storage:
+          ZM Daemon Shared Memory:
             maxy: 100
             units: percentage
             graphpoints:
-              Disk:
-                dpName: Daemon_disk
+              Used:
+                dpName: Daemon_devshm
                 lineType: AREA
                 stacked: TRUE
                 colorindex: 0
-              Temp:
-                dpName: Daemon_devshm
-                lineType: LINE
-                lineWidth: 2
-                colorindex: 1
 
-          ZM Database Connections:
+          ZM Daemon Database Connections:
             units: connections
             graphpoints:
               Used:
@@ -387,7 +381,7 @@ device_classes:
                 stacked: TRUE
                 color: cccccc
 
-          ZM Total Bandwidth:
+          ZM Daemon Total Bandwidth:
             units: bits/sec
             base: true
             graphpoints:
@@ -398,7 +392,7 @@ device_classes:
                 stacked: true
                 colorindex: 0
 
-          ZM Total Events:
+          ZM Daemon Total Events:
             units: events/min
             graphpoints:
               Events:
