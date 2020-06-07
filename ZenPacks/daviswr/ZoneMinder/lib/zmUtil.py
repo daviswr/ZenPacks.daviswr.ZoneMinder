@@ -86,13 +86,20 @@ def scrape_console_bandwidth(html):
     return bandwidth
 
 
+def scrape_console_capturing(html):
+    """ Scrapes system capturing percentage from Console page HTML """
+    capturing_regex = r'Capturing.*\W+(\d+\.?\d*)%'
+    capturing_match = re.search(capturing_regex, html)
+    return float(capturing_match.groups()[0]) if capturing_match else ''
+
+
 def scrape_console_db(html):
     """ Scrapes DB connection count from Console page HTML """
     db_regex = r'DB:(\d+)/(\d+)'
     db_match = re.search(db_regex, html)
     return {
-        'db-used': db_match.groups()[0] if db_match else '',
-        'db-max': db_match.groups()[1] if db_match else '',
+        'db-used': int(db_match.groups()[0]) if db_match else '',
+        'db-max': int(db_match.groups()[1]) if db_match else '',
         }
 
 
@@ -139,36 +146,16 @@ def scrape_console_monitor(html, monitor_id):
     return output
 
 
-def scrape_console_storage(html):
-    """ Scrape disk and SHM utilization from Console page HTML """
+def scrape_console_shm(html):
+    """ Scrape SHM utilization from Console page HTML """
 
-    stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/w+\/shm.?\s(\d+)%?'  # noqa
+    # stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/w+\/shm.?\s(\d+)%?'  # noqa
     # stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?.*\/\w+\/shm.?\s+(\d+)%?'  # noqa
-    # Old Storage Example:
-    # Storage: 94%
-    old_storage_regex = r'Storage.?\s+(\d+)%?'
     # SHM Example:
     # <span class="">/run/shm: 34%</span></li>
     shm_regex = r'/\w+\/shm.?\s+(\d+)%?'
-
-    match = re.search(stats_130_regex, html)
-    if match:
-        # 1.30
-        console = {
-            'disk': int(match.groups()[0]),
-            'devshm': int(match.groups()[1]),
-            }
-    else:
-        # 1.32 or later
-        old_storage_match = re.search(old_storage_regex, html)
-        shm_match = re.search(shm_regex, html)
-
-        console = {
-            'disk': old_storage_match.groups()[0] if old_storage_match else '',
-            'devshm': shm_match.groups()[0] if shm_match else '',
-            }
-
-    return console
+    shm_match = re.search(shm_regex, html)
+    return int(shm_match.groups()[0]) if shm_match else ''
 
 
 def scrape_console_volumes(html):

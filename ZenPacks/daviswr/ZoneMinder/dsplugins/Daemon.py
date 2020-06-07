@@ -123,14 +123,17 @@ class Daemon(PythonDataSourcePlugin):
                     cookies=cookies
                     )
 
-                # Scrape disk and (/dev/shm|/run/shm) utilization from HTML
-                output['console'] = zmUtil.scrape_console_storage(response)
+                # Scrape shared memory utilization from HTML
+                output['devshm'] = zmUtil.scrape_console_shm(response)
 
                 # Scrape DB connection counts from HTML
                 output['db'] = zmUtil.scrape_console_db(response)
 
                 # Scrape total capture bandwidth from HTML
                 output['bandwidth'] = zmUtil.scrape_console_bandwidth(response)
+
+                # Scrape system capturing percentage from HTML
+                output['capturing'] = zmUtil.scrape_console_capturing(response)
 
                 # Daemon status
                 response = yield getPage(
@@ -191,11 +194,11 @@ class Daemon(PythonDataSourcePlugin):
             if len(load) >= 3:
                 (stats['load-1'], stats['load-5'], stats['load-15']) = load
 
-            for category in ['console', 'db']:
-                stats.update(output.get(category, dict()))
+            stats.update(output.get('db', dict()))
 
-            if 'bandwidth' in output:
-                stats['bandwidth'] = output.get('bandwidth')
+            for metric in ['bandwidth', 'capturing', 'devshm']:
+                if metric in output:
+                    stats[metric] = output[metric]
 
             # Event counts ("results", plural)
             events = output.get('results', list())

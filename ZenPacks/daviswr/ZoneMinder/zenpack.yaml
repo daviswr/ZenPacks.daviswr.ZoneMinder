@@ -200,32 +200,55 @@ classes:
         label_width: 256
       StorageType:
         label: Type
-        order: 3
+        order: 10
       Url:
         label: URL
         details_display: false
-        order: 4
+        order: 11
       DiskSpace:
         # The API uses this to report space used by events,
         # but will be used here to represent the size of the volume
-        label: Disk Space
+        label: Size
         type: int
         renderer: Zenoss.render.bytesString
         grid_display: true
         order: 5
       Scheme:
         label: Scheme
-        order: 6
+        order: 12
       ServerId:
         label: Server ID
         type: int
         default: 0
         details_display: false
-        order: 7
+        order: 13
       DoDelete:
         label: Do-Delete
         type: boolean
         details_display: false
+        order: 14
+      DiskUsed:
+        label: Used
+        type: int
+        renderer: Zenoss.render.bytesString
+        datapoint: Storage_used
+        grid_display: true
+        order: 6
+      DiskEvents:
+        label: Used by Events
+        short_label: Events
+        type: int
+        renderer: Zenoss.render.bytesString
+        datapoint: Storage_events
+        grid_display: false
+        order: 7
+      DiskPercent:
+        label: Percentage Used
+        short_label: Percent
+        type: int
+        datapoint: Storage_percent
+        grid_display: true
+        label_width: 45
         order: 8
 
 
@@ -315,6 +338,7 @@ device_classes:
               bandwidth: GAUGE
               db-used: GAUGE
               db-max: GAUGE
+              capturing: GAUGE
 
         thresholds:
           Daemon-Status:
@@ -333,6 +357,16 @@ device_classes:
             dsnames:
               - Daemon_state
             severity: 1
+            eventClass: /Status/ZoneMinder
+
+          Daemon-Capturing:
+            type: MinMaxThreshold
+            minval: 99
+            maxval: 101
+            enabled: true
+            dsnames:
+              - Daemon_capturing
+            severity: 3
             eventClass: /Status/ZoneMinder
 
         graphs:
@@ -400,6 +434,16 @@ device_classes:
                 rpn: CEIL
                 lineType: LINE
                 lineWidth: 2
+                colorindex: 0
+
+          ZM Daemon Capturing Monitors:
+            maxy: 100
+            units: percentage
+            graphpoints:
+              Events:
+                dpName: Daemon_capturing
+                lineType: AREA
+                stacked: TRUE
                 colorindex: 0
 
 
