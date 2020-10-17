@@ -16,13 +16,13 @@ classes:
     plural_label: ZoneMinder Daemon
     short_label: ZM Daemon
     plural_short_label: ZM Daemon
-    # relationships:
-    #   zmServers:
-    #     grid_display: false
-    #     details_display: false
-    #   zmStorage:
-    #     grid_display: false
-    #     details_display: false
+    relationships:
+      zmStorage:
+        grid_display: false
+        details_display: false
+      # zmServers:
+      #   grid_display: false
+      #   details_display: false
     properties:
       DEFAULTS:
         type: string
