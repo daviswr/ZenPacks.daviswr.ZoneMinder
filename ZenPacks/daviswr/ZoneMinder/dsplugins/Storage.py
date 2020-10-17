@@ -45,8 +45,6 @@ class Storage(PythonDataSourcePlugin):
     def collect(self, config):
         data = self.new_data()
 
-        url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
-
         for datasource in config.datasources:
             # LOG.debug('%s: parameters\n%s', config.id, datasource.params)
             username = datasource.params['username']
@@ -73,7 +71,7 @@ class Storage(PythonDataSourcePlugin):
                 url=base_url
                 )
 
-            if re.match(url_regex, base_url) is None:
+            if re.match(zmUtil.url_regex, base_url) is None:
                 LOG.error('%s: %s is not a valid URL', config.id, base_url)
                 returnValue(None)
             else:

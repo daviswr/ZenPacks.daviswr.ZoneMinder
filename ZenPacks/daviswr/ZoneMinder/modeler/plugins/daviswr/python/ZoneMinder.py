@@ -63,8 +63,7 @@ class ZoneMinder(PythonPlugin):
             url=getattr(device, 'zZoneMinderURL', None)
             )
 
-        url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
-        if re.match(url_regex, base_url) is None:
+        if re.match(zmUtil.url_regex, base_url) is None:
             log.error('%s: %s is not a valid URL', device.id, base_url)
             returnValue(None)
 

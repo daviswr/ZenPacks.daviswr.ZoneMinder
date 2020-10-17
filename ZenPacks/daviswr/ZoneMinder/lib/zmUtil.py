@@ -2,6 +2,8 @@
 
 import re
 
+url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
+
 
 def dissect_versions(versions):
     """ Dissects version JSON returned by the API """
@@ -40,7 +42,7 @@ def generate_zm_url(hostname=None,
                     url=None):
     """ Returns ZoneMinder base URL from given parameters """
     # If valid custom URL not provided, assemble one
-    url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
+    # url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
     if hostname and (not url or not re.match(url_regex, url)):
         if '.' not in hostname:
             hostname = hostname.replace('_', '.')

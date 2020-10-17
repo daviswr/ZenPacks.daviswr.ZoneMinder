@@ -70,8 +70,7 @@ class Daemon(PythonDataSourcePlugin):
                 url=base_url
                 )
 
-            url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
-            if re.match(url_regex, base_url) is None:
+            if re.match(zmUtil.url_regex, base_url) is None:
                 LOG.error('%s: %s is not a valid URL', config.id, base_url)
                 returnValue(None)
             else:
