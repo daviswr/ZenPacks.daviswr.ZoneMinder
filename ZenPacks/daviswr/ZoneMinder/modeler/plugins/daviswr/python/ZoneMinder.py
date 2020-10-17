@@ -214,7 +214,7 @@ class ZoneMinder(PythonPlugin):
             value = config['Value']
             daemon[key] = value
 
-        booleans = ['ZmOptControl', 'ZmOptFfmpeg', 'ZmOptFrameServer']
+        booleans = ['ZmOptControl', 'ZmOptFfmpeg', 'ZmOptUseEventnotification']
         for key in booleans:
             if key in daemon:
                 daemon[key] = True if daemon[key] == '1' else False

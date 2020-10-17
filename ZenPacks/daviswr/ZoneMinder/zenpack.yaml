@@ -70,7 +70,6 @@ classes:
       # enables a frame server daemon (zmf)
       # which will be sent the images from the analysis daemon
       # No longer a config option as of 1.32
-      # Deprecated: Will remove from ZenPack before 1.0
       ZmOptFrameServer:
         label: Frame Server
         short_label: ZMF
@@ -78,7 +77,7 @@ classes:
         default: false
         details_display: false
         label_width: 30
-        order: 20
+        order: 99
       # Support controllable (e.g. PTZ) cameras
       ZmOptControl:
         label: PTZ Support
@@ -88,6 +87,15 @@ classes:
         details_display: true
         label_width: 30
         order: 17
+      # Enable 3rd party Event Notification Server
+      ZmOptUseEventnotification:
+        label: Event Server
+        short_label: ES
+        type: boolean
+        default: false
+        details_display: true
+        label_width: 30
+        order: 20
 
 
   ZMMonitor:
