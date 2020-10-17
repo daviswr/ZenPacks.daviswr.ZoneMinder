@@ -440,7 +440,7 @@ device_classes:
             maxy: 100
             units: percentage
             graphpoints:
-              Events:
+              Monitors:
                 dpName: Daemon_capturing
                 lineType: AREA
                 stacked: TRUE
