@@ -103,6 +103,7 @@ class ZoneMinder(PythonPlugin):
             output['url'] = base_url
 
             # Versions
+            log.debug('%s: ZoneMinder URL: host/getVersion.json', device.id)
             response = yield getPage(
                 api_url + 'host/getVersion.json',
                 method='GET',
@@ -113,6 +114,7 @@ class ZoneMinder(PythonPlugin):
             output.update(version_json)
 
             # Config
+            log.debug('%s: ZoneMinder URL: configs.json', device.id)
             response = yield getPage(
                 api_url + 'configs.json',
                 method='GET',
@@ -121,6 +123,7 @@ class ZoneMinder(PythonPlugin):
             output.update(json.loads(response))
 
             # Monitors
+            log.debug('%s: ZoneMinder URL: monitors.json', device.id)
             response = yield getPage(
                 api_url + 'monitors.json',
                 method='GET',
@@ -129,6 +132,7 @@ class ZoneMinder(PythonPlugin):
             output.update(json.loads(response))
 
             # Monitor PTZ Types
+            log.debug('%s: ZoneMinder URL: controls.json', device.id)
             response = yield getPage(
                 api_url + 'controls.json',
                 method='GET',
@@ -137,6 +141,7 @@ class ZoneMinder(PythonPlugin):
             output.update(json.loads(response))
 
             # Storage Volumes
+            log.debug('%s: ZoneMinder URL: index.php?view=console', device.id)
             response = yield getPage(
                 '{0}index.php?view=console'.format(base_url),
                 method='GET',
@@ -157,6 +162,7 @@ class ZoneMinder(PythonPlugin):
             if (versions['daemon']['major'] >= 1
                     and versions['daemon']['minor'] >= 32):
                 # Storage
+                log.debug('%s: ZoneMinder URL: storage.json', device.id)
                 response = yield getPage(
                     api_url + 'storage.json',
                     method='GET',
@@ -164,12 +170,26 @@ class ZoneMinder(PythonPlugin):
                     )
                 output.update(json.loads(response))
 
-            # Log out
-            yield getPage(
-                base_url + 'index.php?action=logout',
-                method='POST',
-                cookies=cookies
-                )
+                # API logout
+                log.debug('%s: ZoneMinder URL: host/logout.json', device.id)
+                yield getPage(
+                    api_url + 'host/logout.json',
+                    method='POST',
+                    cookies=cookies
+                    )
+
+            else:
+                # Browser-style log out
+                # Doesn't work with 1.34.21
+                log.debug(
+                    '%s: ZoneMinder URL: index.php?action=logout',
+                    device.id
+                    )
+                yield getPage(
+                    base_url + 'index.php?action=logout',
+                    method='POST',
+                    cookies=cookies
+                    )
 
         except Exception, e:
             log.error('%s: %s', device.id, e)

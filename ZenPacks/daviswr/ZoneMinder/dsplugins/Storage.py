@@ -153,12 +153,21 @@ class Storage(PythonDataSourcePlugin):
                         )
                     storage = json.loads(response).get('storage', list())
 
-                # Log out
-                yield getPage(
-                    base_url + 'index.php?action=logout',
-                    method='POST',
-                    cookies=cookies
-                    )
+                    # API logout
+                    yield getPage(
+                        api_url + 'host/logout.json',
+                        method='POST',
+                        cookies=cookies
+                        )
+
+                else:
+                    # Browser-style log out
+                    # Doesn't work with 1.34.21
+                    yield getPage(
+                        base_url + 'index.php?action=logout',
+                        method='POST',
+                        cookies=cookies
+                        )
             except Exception, e:
                 LOG.exception('%s: failed to get store data', config.id)
                 continue

@@ -165,12 +165,31 @@ class Monitor(PythonDataSourcePlugin):
                     )
                 output.update(json.loads(response))
 
-                # Log out
-                yield getPage(
-                    base_url + 'index.php?action=logout',
-                    method='POST',
+                # Versions
+                response = yield getPage(
+                    api_url + 'host/getVersion.json',
+                    method='GET',
                     cookies=cookies
                     )
+                versions = zmUtil.dissect_versions(json.loads(response))
+
+                # Version-specific API calls
+                if (versions['daemon']['major'] >= 1
+                        and versions['daemon']['minor'] >= 32):
+                    # API logout
+                    yield getPage(
+                        api_url + 'host/logout.json',
+                        method='POST',
+                        cookies=cookies
+                        )
+                else:
+                    # Browser-style log out
+                    # Doesn't work with 1.34.21
+                    yield getPage(
+                        base_url + 'index.php?action=logout',
+                        method='POST',
+                        cookies=cookies
+                        )
             except Exception, e:
                 LOG.exception('%s: failed to get monitor data', config.id)
                 continue
