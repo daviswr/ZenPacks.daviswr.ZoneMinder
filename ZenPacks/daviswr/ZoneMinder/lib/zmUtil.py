@@ -67,7 +67,7 @@ def scrape_console_bandwidth(html):
     bandwidth_regex = r'<td class="colFunction">(\S+)B\/s'
     match = re.search(bandwidth_regex, html)
     if match:
-        bandwidth_str = match.groups()[0]
+        bandwidth_str = match.groups()[0].upper()
         if bandwidth_str[-1] not in '0123456789':
             unit_multi = {
                 'K': 1000,
