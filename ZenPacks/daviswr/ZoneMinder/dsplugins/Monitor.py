@@ -177,7 +177,7 @@ class Monitor(PythonDataSourcePlugin):
                     # API logout
                     yield getPage(
                         api_url + 'host/logout.json',
-                        method='POST',
+                        method='GET',
                         cookies=cookies
                         )
                 else:

@@ -173,7 +173,7 @@ class ZoneMinder(PythonPlugin):
                 log.debug('%s: ZoneMinder URL: host/logout.json', device.id)
                 yield getPage(
                     api_url + 'host/logout.json',
-                    method='POST',
+                    method='GET',
                     cookies=cookies
                     )
 
