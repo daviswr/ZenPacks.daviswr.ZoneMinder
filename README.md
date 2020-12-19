@@ -4,8 +4,10 @@ ZenPack to monitor the ZoneMinder daemon and monitors
 
 ## Requirements
 * ZoneMinder 1.30.4 or newer
-  * Not yet tested with 1.32.x's newer API calls
-* ZoneMinder user with View access to all categories
+* ZoneMinder user with View access to most categories
+  * Stream category not required
+* [PythonCollector](https://help.zenoss.com/in/zenpack-catalog/open-source/pythoncollector) ZenPack
+* [ZenPackLib](https://help.zenoss.com/in/zenpack-catalog/open-source/zenpacklib)
 
 ## zProperties
 * `zZoneMinderUsername` - **required**
@@ -32,6 +34,12 @@ ZenPack to monitor the ZoneMinder daemon and monitors
   * Regex of monitor names to ignore
 * `zZoneMinderIgnoreMonitorHostname`
   * Regex of monitor hostnames or IPs to ignore
+* `zZoneMinderIgnoreStorageId`
+  * List of numeric storage volume IDs to ignore
+* `zZoneMinderIgnoreStorageName`
+  * Regex of storage volume names to ignore
+* `zZoneMinderIgnoreStoragePath`
+  * Regex of storage volume filesystem paths to ignore
 
 ## Usage
 I'm not going to make any assumptions about your device class organization, so it's up to you to configure the `daviswr.python.ZoneMinder` modeler on the appropriate class or device.
