@@ -6,6 +6,8 @@ ZenPack to monitor the ZoneMinder daemon and monitors
 * ZoneMinder 1.30.4 or newer
 * ZoneMinder user with View access to most categories
   * Stream category not required
+  * Events recommended but not required
+    * Event-rate graphs will be empty
 * [PythonCollector](https://help.zenoss.com/in/zenpack-catalog/open-source/pythoncollector) ZenPack
 * [ZenPackLib](https://help.zenoss.com/in/zenpack-catalog/open-source/zenpacklib)
 
@@ -44,3 +46,6 @@ ZenPack to monitor the ZoneMinder daemon and monitors
 ## Usage
 I'm not going to make any assumptions about your device class organization, so it's up to you to configure the `daviswr.python.ZoneMinder` modeler on the appropriate class or device.
 
+## Special Thanks
+* [JRansomed](https://github.com/JRansomed)
+* [BaileyTJ](https://github.com/baileytj3)

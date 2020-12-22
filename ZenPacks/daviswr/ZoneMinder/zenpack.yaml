@@ -369,8 +369,7 @@ device_classes:
 
           Daemon-Capturing:
             type: MinMaxThreshold
-            minval: 99
-            maxval: 101
+            minval: 100
             enabled: true
             dsnames:
               - Daemon_capturing
@@ -434,6 +433,16 @@ device_classes:
                 stacked: true
                 colorindex: 0
 
+          ZM Daemon Capturing Monitors:
+            maxy: 100
+            units: percentage
+            graphpoints:
+              Monitors:
+                dpName: Daemon_capturing
+                lineType: LINE
+                lineWidth: 2
+                colorindex: 0
+
           ZM Daemon Total Events:
             units: events/min
             graphpoints:
@@ -442,16 +451,6 @@ device_classes:
                 rpn: CEIL
                 lineType: LINE
                 lineWidth: 2
-                colorindex: 0
-
-          ZM Daemon Capturing Monitors:
-            maxy: 100
-            units: percentage
-            graphpoints:
-              Monitors:
-                dpName: Daemon_capturing
-                lineType: AREA
-                stacked: TRUE
                 colorindex: 0
 
 
