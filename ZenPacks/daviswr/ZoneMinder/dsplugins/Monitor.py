@@ -121,7 +121,7 @@ class Monitor(PythonDataSourcePlugin):
                 # This returns a 302 to the console page
                 # rather than just the console
                 response = yield getPage(
-                    '{0}index.php?view=console'.format(base_url),
+                    base_url + 'index.php?view=console',
                     method='GET',
                     cookies=cookies
                     )
@@ -155,14 +155,6 @@ class Monitor(PythonDataSourcePlugin):
                     )
                 output.update(json.loads(response))
 
-                # Five-minute event counts
-                response = yield getPage(
-                    api_url + 'events/consoleEvents/300%20second.json',
-                    method='GET',
-                    cookies=cookies
-                    )
-                output.update(json.loads(response))
-
                 # Versions
                 response = yield getPage(
                     api_url + 'host/getVersion.json',
@@ -171,6 +163,23 @@ class Monitor(PythonDataSourcePlugin):
                     )
                 versions = zmUtil.dissect_versions(json.loads(response))
 
+            except Exception:
+                LOG.exception('%s: failed to get monitor data', config.id)
+                continue
+
+            # User might not have View access to Events
+            try:
+                # Five-minute event counts
+                response = yield getPage(
+                    api_url + 'events/consoleEvents/300%20second.json',
+                    method='GET',
+                    cookies=cookies
+                    )
+                output.update(json.loads(response))
+            except Exception:
+                LOG.exception('%s: failed to get event counts', config.id)
+
+            try:
                 # Version-specific API calls
                 if (versions['daemon']['major'] >= 1
                         and versions['daemon']['minor'] >= 32):
@@ -188,9 +197,8 @@ class Monitor(PythonDataSourcePlugin):
                         method='POST',
                         cookies=cookies
                         )
-            except Exception, e:
-                LOG.exception('%s: failed to get monitor data', config.id)
-                continue
+            except Exception:
+                LOG.exception('%s: failed to log out', config.id)
 
             LOG.debug('%s: ZM monitor output:\n%s', config.id, output)
 
