@@ -166,7 +166,7 @@ class Storage(PythonDataSourcePlugin):
                         method='POST',
                         cookies=cookies
                         )
-            except Exception, e:
+            except Exception:
                 LOG.exception('%s: failed to get store data', config.id)
                 continue
 
@@ -175,10 +175,14 @@ class Storage(PythonDataSourcePlugin):
                 store = item['Storage']
                 if store['Name'] in volumes:
                     volumes[store['Name']].update(store)
-                    if volumes[store['Name']]['DiskSpace']:
-                        volumes[store['Name']]['events'] = int(
-                            volumes[store['Name']]['DiskSpace']
-                            )
+                # Scraping failed
+                else:
+                    volumes[store['Name']] = store
+
+                if 'DiskSpace' in volumes[store['Name']]:
+                    volumes[store['Name']]['events'] = int(
+                        volumes[store['Name']]['DiskSpace']
+                        )
 
             LOG.debug('%s: ZM storage output:\n%s', config.id, volumes)
 

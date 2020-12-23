@@ -450,6 +450,9 @@ class ZoneMinder(PythonPlugin):
             store = item['Storage']
             if store['Name'] in volumes:
                 volumes[store['Name']].update(store)
+            # Scraping failed
+            else:
+                volumes[store['Name']] = store
 
         for store_name in volumes:
             store = volumes[store_name]
@@ -482,6 +485,9 @@ class ZoneMinder(PythonPlugin):
 
             if 'total' in store:
                 store['DiskSpace'] = store['total']
+            else:
+                # DiskSpace is actually space used by events
+                del store['DiskSpace']
 
             store['StorageType'] = store.get('Type', None)
 

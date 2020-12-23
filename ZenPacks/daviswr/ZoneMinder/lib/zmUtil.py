@@ -177,7 +177,7 @@ def scrape_console_volumes(html):
 
     # Storage volume Example:
     # <span class="" title="390.06GB of 2.69TB 249.93GB used by events">Storage2: 14%</span>  # noqa
-    stores_regex = r'(\d+\.?\d*)(\w?B) of (\d+\.?\d*)(\w?B) (\d+\.?\d*)(\w?B) used by events.*\>(\w+):\s+(\d+)%'  # noqa
+    stores_regex = r'(\d+\.?\d*)(\w?B) of (\d+\.?\d*)(\w?B) (\d+\.?\d*)(\w?B) used by events.*\>(\S+):\s+(\d+)%'  # noqa
     disk130_regex = r'Disk.?\s+(\d+)%'
     stores = dict()
 
