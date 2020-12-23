@@ -26,6 +26,13 @@ elif evt.eventKey.endswith('Daemon-RunState'):
     device.collectDevice(background=True)
     evt._action = 'history'
 
+elif evt.eventKey.endswith('Daemon-Capturing'):
+    if SEVERITY_CLEAR == evt.severity:
+        evt.summary = 'All monitors are capturing'
+    else:
+        no_cap = 100 - current
+        evt.summary = '{0}% of monitors are not capturing'.format(no_cap)
+
 elif 'Monitor' in evt.eventKey:
     monitor_id = evt.component.replace('zmMonitor', '')
     severities = {
@@ -54,10 +61,10 @@ elif 'Monitor' in evt.eventKey:
             component.Enabled = True if 1 == current else False
         updateDb()
 
+# ZPL Components look for events in /Status rather than
+# /Status/ClassName to determine up/down status
 if ('Daemon-RunState' not in evt.eventKey
         and 'Daemon-Capturing' not in evt.eventKey):
-    # ZPL Components look for events in /Status rather than
-    # /Status/ClassName to determine up/down status
     evt.eventClass = '/Status'
     if evt.severity != SEVERITY_CLEAR:
         evt.severity = severities.get(current, SEVERITY_WARNING)

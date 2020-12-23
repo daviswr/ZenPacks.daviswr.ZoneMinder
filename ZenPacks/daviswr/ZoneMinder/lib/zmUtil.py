@@ -42,7 +42,6 @@ def generate_zm_url(hostname=None,
                     url=None):
     """ Returns ZoneMinder base URL from given parameters """
     # If valid custom URL not provided, assemble one
-    # url_regex = r'^https?:\/\/\S+:?\d*\/?\S*\/$'
     if hostname and (not url or not re.match(url_regex, url)):
         if '.' not in hostname:
             hostname = hostname.replace('_', '.')
@@ -90,13 +89,18 @@ def scrape_console_bandwidth(html):
 
 def scrape_console_capturing(html):
     """ Scrapes system capturing percentage from Console page HTML """
-    capturing_regex = r'Capturing.*\W+(\d+\.?\d*)%'
+    # Capturing percentage examples:
+    # <span class="status"><label>Capturing</label>66.7%</span>
+    # <span class="status"><label>Capturing</label>100%</span>
+    capturing_regex = r'Capturing\D+(\d+\.?\d*)%'
     capturing_match = re.search(capturing_regex, html)
-    return float(capturing_match.groups()[0]) if capturing_match else ''
+    return round(float(capturing_match.groups()[0])) if capturing_match else ''
 
 
 def scrape_console_db(html):
     """ Scrapes DB connection count from Console page HTML """
+    # Database connections example:
+    # <li>DB:35/151</li>	  <li>Storage:
     db_regex = r'DB:(\d+)/(\d+)'
     db_match = re.search(db_regex, html)
     return {
@@ -150,9 +154,6 @@ def scrape_console_monitor(html, monitor_id):
 
 def scrape_console_shm(html):
     """ Scrape SHM utilization from Console page HTML """
-
-    # stats_130_regex = r'Load.?\s+\d+\.\d+.*Disk.?\s+(\d+)%?.*\/w+\/shm.?\s(\d+)%?'  # noqa
-    # stats_132_regex = r'Storage.?\s+(\d+)%?<?\/?[span]*>?.*\/\w+\/shm.?\s+(\d+)%?'  # noqa
     # SHM Example:
     # <span class="">/run/shm: 34%</span></li>
     shm_regex = r'/\w+\/shm.?\s+(\d+)%?'

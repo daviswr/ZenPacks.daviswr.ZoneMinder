@@ -6,6 +6,7 @@ class_relationships:
   - ZoneMinder(zmStorage) 1:MC ZMStorage(zoneMinder)
 # These relationships may be supported in a future release
 #  - ZoneMinder(zmServers) 1:MC ZMServer(zoneMinder)
+#  - ZMStorage(zmMonitors) 1:M ZMMonitor(zmStorage)
 
 classes:
   DEFAULTS:
@@ -175,12 +176,12 @@ classes:
         label: Alarm Max FPS
         type: float
         details_display: false
-      # Deprecated: Will remove from ZenPack before 1.0
+      # Deprecated
       CaptureFPS:
         label: Capture FPS
         type: float
         details_display: false
-      # Deprecated: Will remove from ZenPack before 1.0
+      # Deprecated
       AnalysisFPS:
         label: Analysis FPS
         type: float
@@ -260,7 +261,7 @@ classes:
         order: 8
 
 
-  # This relationships may be supported in a future release
+  # This relationship may be supported in a future release
   ZMServer:
     label: ZoneMinder Server
     short_label: ZM Server
@@ -321,7 +322,9 @@ zProperties:
     type: string
   zZoneMinderIgnoreStoragePath:
     type: string
-
+  zZoneMinderCapturingThreshold:
+    type: int
+    default: 100
 
 device_classes:
   /:
@@ -369,7 +372,7 @@ device_classes:
 
           Daemon-Capturing:
             type: MinMaxThreshold
-            minval: 100
+            minval: here.zZoneMinderCapturingThreshold
             enabled: true
             dsnames:
               - Daemon_capturing
@@ -625,6 +628,13 @@ event_classes:
           device.collectDevice(background=True)
           evt._action = 'history'
 
+      elif evt.eventKey.endswith('Daemon-Capturing'):
+          if SEVERITY_CLEAR == evt.severity:
+              evt.summary = 'All monitors are capturing'
+          else:
+              no_cap = 100 - current
+              evt.summary = '{0}% of monitors are not capturing'.format(no_cap)
+
       elif 'Monitor' in evt.eventKey:
           monitor_id = evt.component.replace('zmMonitor', '')
           severities = {
@@ -653,10 +663,10 @@ event_classes:
                   component.Enabled = True if 1 == current else False
               updateDb()
 
+      # ZPL Components look for events in /Status rather than
+      # /Status/ClassName to determine up/down status
       if ('Daemon-RunState' not in evt.eventKey
               and 'Daemon-Capturing' not in evt.eventKey):
-          # ZPL Components look for events in /Status rather than
-          # /Status/ClassName to determine up/down status
           evt.eventClass = '/Status'
           if evt.severity != SEVERITY_CLEAR:
               evt.severity = severities.get(current, SEVERITY_WARNING)

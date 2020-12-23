@@ -42,6 +42,9 @@ ZenPack to monitor the ZoneMinder daemon and monitors
   * Regex of storage volume names to ignore
 * `zZoneMinderIgnoreStoragePath`
   * Regex of storage volume filesystem paths to ignore
+* `zZoneMinderCapturingThreshold`
+  * Rounded percentage of monitors to be capturing
+  * Defaults to 100
 
 ## Usage
 I'm not going to make any assumptions about your device class organization, so it's up to you to configure the `daviswr.python.ZoneMinder` modeler on the appropriate class or device.
