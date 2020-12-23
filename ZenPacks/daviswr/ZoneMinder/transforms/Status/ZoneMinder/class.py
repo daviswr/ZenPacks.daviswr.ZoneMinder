@@ -54,8 +54,10 @@ elif 'Monitor' in evt.eventKey:
             component.Enabled = True if 1 == current else False
         updateDb()
 
-if 'Daemon-RunState' not in evt.eventKey:
+if ('Daemon-RunState' not in evt.eventKey
+        and 'Daemon-Capturing' not in evt.eventKey):
     # ZPL Components look for events in /Status rather than
     # /Status/ClassName to determine up/down status
     evt.eventClass = '/Status'
-    evt.severity = severities.get(current, SEVERITY_WARNING)
+    if evt.severity != SEVERITY_CLEAR:
+        evt.severity = severities.get(current, SEVERITY_WARNING)
