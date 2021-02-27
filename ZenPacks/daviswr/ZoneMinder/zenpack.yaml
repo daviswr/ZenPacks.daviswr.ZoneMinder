@@ -311,13 +311,13 @@ zProperties:
   zZoneMinderURL:
     type: string
   zZoneMinderIgnoreMonitorId:
-    type: list
+    type: lines
   zZoneMinderIgnoreMonitorName:
     type: string
   zZoneMinderIgnoreMonitorHostname:
     type: string
   zZoneMinderIgnoreStorageId:
-    type: list
+    type: lines
   zZoneMinderIgnoreStorageName:
     type: string
   zZoneMinderIgnoreStoragePath:
