@@ -316,7 +316,9 @@ class ZoneMinder(PythonPlugin):
                 }
 
             # Invert the dictionary
-            port_protocol = dict(map(reversed, protocol_port.items()))
+            port_protocol = dict(
+                (value, key) for key, value in protocol_port.items()
+                )
 
             if not path_url_match:
                 path = '{0}://{1}:{2}{3}'.format(
