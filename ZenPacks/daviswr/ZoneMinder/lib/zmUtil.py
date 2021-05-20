@@ -99,9 +99,11 @@ def scrape_console_capturing(html):
 
 def scrape_console_db(html):
     """ Scrapes DB connection count from Console page HTML """
-    # Database connections example:
-    # <li>DB:35/151</li>	  <li>Storage:
-    db_regex = r'DB:(\d+)/(\d+)'
+    # 1.34 database connections example:
+    # <li>DB:35/151</li>
+    # 1.36:
+    # DB: 33/1000
+    db_regex = r'DB:\s?(\d+)/(\d+)'
     db_match = re.search(db_regex, html)
     return {
         'db-used': int(db_match.groups()[0]) if db_match else '',
@@ -118,15 +120,20 @@ def scrape_console_monitor(html, monitor_id):
         }
     output = ''
 
-    # 1.30
-    if 'zmWatch' in html:
-        watch_prefix = 'zmWatch'
-        watch_offset = 2
+    # 1.36
+    if 'functionLnk-' in html:
+        watch_prefix = 'functionLnk-'
+        watch_offset = 5
     # 1.34
     elif 'zmMonitor' in html:
         watch_prefix = 'zmMonitor'
         watch_offset = 0
-    # 1.32
+        online_regex = r'zmMonitor.*<span class="(\w+)Text">'
+    # 1.30
+    elif 'zmWatch' in html:
+        watch_prefix = 'zmWatch'
+        watch_offset = 2
+    # 1.32 - has to be last
     elif 'monitor_id-' in html:
         watch_prefix = 'monitor_id-'
         watch_offset = 9
@@ -135,7 +142,7 @@ def scrape_console_monitor(html, monitor_id):
 
     watch_id = watch_prefix + monitor_id
 
-    if watch_id in html:
+    if watch_prefix and watch_id in html:
         watch_index = -1
         console = html.splitlines()
         for ii in range(0, len(console) - 1):
@@ -176,9 +183,12 @@ def scrape_console_volumes(html):
         'YB': 1024**8,
         }
 
-    # Storage volume Example:
+    # 1.34 Storage Volume Example:
     # <span class="" title="390.06GB of 2.69TB 249.93GB used by events">Storage2: 14%</span>  # noqa
-    stores_regex = r'(\d+\.?\d*)(\w?B) of (\d+\.?\d*)(\w?B) (\d+\.?\d*)(\w?B) used by events.*\>(\S+):\s+(\d+)%'  # noqa
+    # 1.36 Example:
+    # <a class="dropdown-item " title="2.38TB of 5.41TB 2.11TB used by events"
+    # 	href="?view=options&amp;tab=storage">Storage2: 44%</a>
+    stores_regex = r'(\d+\.?\d*)(\w?B) of (\d+\.?\d*)(\w?B) (\d+\.?\d*)(\w?B) used by events"[\n\r]?.*\>(\S+):\s+(\d+)%'  # noqa
     disk130_regex = r'Disk.?\s+(\d+)%'
     stores = dict()
 
