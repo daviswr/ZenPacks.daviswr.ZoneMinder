@@ -342,14 +342,15 @@ class ZoneMinder(PythonPlugin):
             elif port != protocol_port.get(protocol, port):
                 port = protocol_port.get(protocol, port)
 
-            url_password_regex = r'(\S+)passw?o?r?d?=[^_&?]+[_&?](\S+)'
-            url_password_match = re.match(url_password_regex, path)
-            if url_password_match:
+            url_pass_mid_regex = r'(\S+)passw?o?r?d?=[^_&?]+[_&?](\S+)'
+            url_pass_end_regex = r'(\S+)passw?o?r?d?=[^_&?]+'
+            url_pass_match = (re.match(url_pass_mid_regex, path)
+                              or re.match(url_pass_end_regex, path))
+            if url_pass_match:
                 log.debug('%s: Remove password from URL %s', device.id, path)
-                path = '{0}{1}'.format(
-                    url_password_match.groups()[0],
-                    url_password_match.groups()[1]
-                    )
+                path = url_pass_match.groups()[0]
+                if len(url_pass_match.groups()) > 1:
+                    path += url_pass_match.groups()[1]
 
             monitor['Path'] = path
             monitor['Host'] = host
