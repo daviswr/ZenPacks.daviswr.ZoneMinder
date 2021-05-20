@@ -8,11 +8,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.client import getPage
 
 from Products.DataCollector.plugins.CollectorPlugin import PythonPlugin
-from Products.DataCollector.plugins.DataMaps import (
-    MultiArgs,
-    RelationshipMap,
-    ObjectMap
-    )
+from Products.DataCollector.plugins.DataMaps import ObjectMap, RelationshipMap
 
 from ZenPacks.daviswr.ZoneMinder.lib import zmUtil
 
