@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.9.3] - 2021-06-03
+
+### Added
+ * Support for ZoneMinder 1.36
+
+### Fixed
+ * Monitor status scraped from Console in 1.34
+ * Detecting monitor passwords in middle of monitor URL
+
 ## [0.9.2] - 2020-12-22
 
 ### Added
@@ -20,7 +29,7 @@
 ## [0.9.0] - 2020-12-19
 
 ### Added
- * Support for ZoneMinder 1.34
+ * Support for ZoneMinder 1.32 and 1.34
  * Storage volume modeling and monitoring
  * Per-monitor framerates and bandwdith
 
@@ -35,7 +44,8 @@
 ## 0.7.0 - 2019-03-17
  * Alpha release
 
-[Unreleased]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.2...HEAD
+[Unreleased]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.3...HEAD
+[0.9.3]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.2...0.9.3
 [0.9.2]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.1...0.9.2
 [0.9.1]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.0...0.9.1
-[0.9.0]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.7.0...0.9.0 
+[0.9.0]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.7.0...0.9.0
