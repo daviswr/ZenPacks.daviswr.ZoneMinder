@@ -5,7 +5,6 @@ LOG = logging.getLogger('zen.ZoneMinder')
 
 import json
 import re
-import urllib
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.client import getPage
@@ -81,16 +80,9 @@ class Monitor(PythonDataSourcePlugin):
                     base_url
                     )
 
-            login_params = urllib.urlencode({
-                'action': 'login',
-                'view': 'login',
-                'username': username,
-                'password': password,
-                # 1.34+ requires OPT_USE_LEGACY_API_AUTH
-                'stateful': 1,
-                })
-            login_url = '{0}index.php?{1}'.format(base_url, login_params)
             api_url = '{0}api/'.format(base_url)
+            login_url = '{0}host/login.json?user={1}'.format(api_url, username)
+            login_url += '&pass={0}&stateful=1'.format(password)
             mon_url = 'monitors/daemonStatus/id:{0}/daemon:zmc.json'.format(
                 comp_id
                 )
@@ -98,7 +90,7 @@ class Monitor(PythonDataSourcePlugin):
             cookies = dict()
             try:
                 # Attempt login
-                login_response = yield getPage(
+                response = yield getPage(
                     login_url,
                     method='POST',
                     cookies=cookies
@@ -106,7 +98,8 @@ class Monitor(PythonDataSourcePlugin):
 
                 output = dict()
 
-                if 'Invalid username or password' in login_response:
+                if ('Login denied' in response
+                        or '"success": false' in response):
                     LOG.error(
                         '%s: ZoneMinder login credentials invalid',
                         config.id,
@@ -155,14 +148,6 @@ class Monitor(PythonDataSourcePlugin):
                     )
                 output.update(json.loads(response))
 
-                # Versions
-                response = yield getPage(
-                    api_url + 'host/getVersion.json',
-                    method='GET',
-                    cookies=cookies
-                    )
-                versions = zmUtil.dissect_versions(json.loads(response))
-
             except Exception:
                 LOG.exception('%s: failed to get monitor data', config.id)
                 continue
@@ -180,23 +165,12 @@ class Monitor(PythonDataSourcePlugin):
                 LOG.exception('%s: failed to get event counts', config.id)
 
             try:
-                # Version-specific API calls
-                if (versions['daemon']['major'] >= 1
-                        and versions['daemon']['minor'] >= 32):
-                    # API logout
-                    yield getPage(
-                        api_url + 'host/logout.json',
-                        method='GET',
-                        cookies=cookies
-                        )
-                else:
-                    # Browser-style log out
-                    # Doesn't work with 1.34.21
-                    yield getPage(
-                        base_url + 'index.php?action=logout',
-                        method='POST',
-                        cookies=cookies
-                        )
+                # API logout
+                yield getPage(
+                    api_url + 'host/logout.json',
+                    method='GET',
+                    cookies=cookies
+                    )
             except Exception:
                 LOG.exception('%s: failed to log out', config.id)
 
@@ -207,28 +181,15 @@ class Monitor(PythonDataSourcePlugin):
             if 'online' in output:
                 stats['online'] = output['online']
 
-            monitor = output.get('monitor', dict()).get('Monitor', dict())
-
-            if len(monitor) > 0:
-                stats['enabled'] = monitor.get('Enabled', '0')
-
-            # 1.30 Framerates
-            if 'CaptureFPS' in monitor:
-                stats['CaptureFPS'] = monitor['CaptureFPS']
-            if 'AnalysisFPS' in monitor:
-                stats['AnalysisFPS'] = monitor['AnalysisFPS']
-
-            # 1.32 Monitor Status
+            # 1.32+ Monitor Status
             stats.update(output.get('monitor', dict()).get(
                 'Monitor_Status',
                 dict()
                 ))
 
-            # 1.30
-            stats['status'] = 1 if output.get('status') else 0
-            # 1.32
-            stats['status'] = 1 if stats.get('Status', '') == 'Connected' \
-                else 0
+            # 1.32+
+            stats['status'] = (1 if stats.get('Status', '') == 'Connected'
+                               else 0)
 
             events = output.get('results', list())
             # "results" will be an empty *list* if no monitors have events

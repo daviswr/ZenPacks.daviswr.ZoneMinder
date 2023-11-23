@@ -48,18 +48,6 @@ elif 'Monitor' in evt.eventKey:
             }
         online = online_map.get(current, 'reachability unknown')
         evt.summary = 'ZM monitor {0} {1}'.format(monitor_id, online)
-    elif 'Enabled' in evt.eventKey:
-        enabled_map = {
-            0: 'disabled',
-            1: 'enabled',
-            }
-        enabled = enabled_map.get(current, 'unknown')
-        evt.summary = 'ZM monitor {0} is {1}'.format(monitor_id, enabled)
-
-        @transact
-        def updateDb():
-            component.Enabled = True if 1 == current else False
-        updateDb()
 
 # ZPL Components look for events in /Status rather than
 # /Status/ClassName to determine up/down status

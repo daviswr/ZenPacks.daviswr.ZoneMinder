@@ -120,8 +120,13 @@ def scrape_console_monitor(html, monitor_id):
         }
     output = ''
 
-    # 1.36
-    if 'functionLnk-' in html:
+    # Late 1.36
+    if '<a class="functionLnk ' in html:
+        watch_prefix = 'functionLnk-'
+        watch_offset = 0
+        online_regex = r'<a class="functionLnk (\w+)Text"'
+    # Early 1.36
+    elif 'functionLnk-' in html:
         watch_prefix = 'functionLnk-'
         watch_offset = 5
     # 1.34
@@ -129,10 +134,6 @@ def scrape_console_monitor(html, monitor_id):
         watch_prefix = 'zmMonitor'
         watch_offset = 0
         online_regex = r'zmMonitor.*<span class="(\w+)Text">'
-    # 1.30
-    elif 'zmWatch' in html:
-        watch_prefix = 'zmWatch'
-        watch_offset = 2
     # 1.32 - has to be last
     elif 'monitor_id-' in html:
         watch_prefix = 'monitor_id-'
@@ -189,7 +190,6 @@ def scrape_console_volumes(html):
     # <a class="dropdown-item " title="2.38TB of 5.41TB 2.11TB used by events"
     # 	href="?view=options&amp;tab=storage">Storage2: 44%</a>
     stores_regex = r'(\d+\.?\d*)(\w?B) of (\d+\.?\d*)(\w?B) (\d+\.?\d*)(\w?B) used by events"[\n\r]?.*\>(\S+):\s+(\d+)%'  # noqa
-    disk130_regex = r'Disk.?\s+(\d+)%'
     stores = dict()
 
     store_matches = re.findall(stores_regex, html)
@@ -220,11 +220,5 @@ def scrape_console_volumes(html):
                 stores[store]['events'] = stores['Default']['events']
                 del stores['Default']
                 break
-
-    # Fake a storage volume based on 1.30's disk utilization percentage
-    if not stores:
-        disk_match = re.search(disk130_regex, html)
-        if disk_match:
-            stores['Default'] = {'percent': int(disk_match.groups()[0])}
 
     return stores

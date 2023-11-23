@@ -3,7 +3,10 @@
 ZenPack to monitor the ZoneMinder daemon and monitors
 
 ## Requirements
-* ZoneMinder 1.30.4 or newer
+* ZoneMinder 1.32 or newer
+* API options enabled
+  * `OPT_USE_API`
+  * `OPT_USE_LEGACY_API_AUTH` - controls API cookie support on 1.36
 * ZoneMinder user with View access to most categories
   * Stream category not required
   * Events recommended but not required
@@ -43,7 +46,7 @@ ZenPack to monitor the ZoneMinder daemon and monitors
 * `zZoneMinderIgnoreStoragePath`
   * Regex of storage volume filesystem paths to ignore
 * `zZoneMinderCapturingThreshold`
-  * Rounded percentage of monitors to be capturing
+  * Rounded percentage of monitors expected to be capturing
   * Defaults to 100
 
 ## Usage

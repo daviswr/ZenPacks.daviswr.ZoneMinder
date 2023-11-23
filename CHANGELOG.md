@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.9.4] - 2023-11-22
+
+### Fixed
+ * Support for ZoneMinder 1.36.33
+
+### Changed
+ * Removed support for ZoneMinder 1.30 - requires 1.32+ API
+
 ## [0.9.3] - 2021-06-03
 
 ### Added
@@ -44,7 +52,8 @@
 ## 0.7.0 - 2019-03-17
  * Alpha release
 
-[Unreleased]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.3...HEAD
+[Unreleased]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.4...HEAD
+[0.9.4]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.3...0.9.4
 [0.9.3]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.2...0.9.3
 [0.9.2]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.1...0.9.2
 [0.9.1]: https://github.com/daviswr/ZenPacks.daviswr.ZoneMinder/compare/0.9.0...0.9.1

@@ -120,31 +120,29 @@ classes:
         order : 9
       Function:
         grid_display: true
-        order: 8
+        order: 7
       Enabled:
+        label: Analysis Enabled
+        short_label: Analysis
         type: boolean
         default: false
-        enum: {true: "clear", false: "critical"}
-        renderer: Zenoss.render.severity
-        grid_display: true
-        details_display: false
-        label_width: 45
-        order: 2
+        grid_display: false
+        order: 8
       Protocol:
-        order: 6
+        order: 5
       Method:
-        order: 7
+        order: 6
       Host:
         grid_display: true
-        order: 3
+        order: 2
       Port:
         type: int
-        order: 4
+        order: 3
       Path:
         # Will have to remove passwords from URL
         # May have to assemble with Host and Port depending on format
         label: URL
-        order: 5
+        order: 4
       Resolution:
         # Assembled from Width and Height attributes
         details_display: true
@@ -176,12 +174,12 @@ classes:
         label: Alarm Max FPS
         type: float
         details_display: false
-      # Deprecated
+      # Deprecated as a property
       CaptureFPS:
         label: Capture FPS
         type: float
         details_display: false
-      # Deprecated
+      # Deprecated as a property
       AnalysisFPS:
         label: Analysis FPS
         type: float
@@ -468,7 +466,6 @@ device_classes:
             datapoints:
               status: GAUGE
               events: GAUGE
-              enabled: GAUGE
               online: GAUGE
               CaptureFPS: GAUGE
               AnalysisFPS: GAUGE
@@ -482,16 +479,6 @@ device_classes:
             enabled: true
             dsnames:
              - Monitor_status
-            severity: 3
-            eventClass: /Status/ZoneMinder
-
-          Monitor-Enabled:
-            type: MinMaxThreshold
-            minval: 1
-            maxval: 1
-            enabled: true
-            dsnames:
-             - Monitor_enabled
             severity: 3
             eventClass: /Status/ZoneMinder
 
@@ -650,18 +637,6 @@ event_classes:
                   }
               online = online_map.get(current, 'reachability unknown')
               evt.summary = 'ZM monitor {0} {1}'.format(monitor_id, online)
-          elif 'Enabled' in evt.eventKey:
-              enabled_map = {
-                  0: 'disabled',
-                  1: 'enabled',
-                  }
-              enabled = enabled_map.get(current, 'unknown')
-              evt.summary = 'ZM monitor {0} is {1}'.format(monitor_id, enabled)
-
-              @transact
-              def updateDb():
-                  component.Enabled = True if 1 == current else False
-              updateDb()
 
       # ZPL Components look for events in /Status rather than
       # /Status/ClassName to determine up/down status

@@ -5,7 +5,6 @@ LOG = logging.getLogger('zen.ZoneMinder')
 
 import json
 import re
-import urllib
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.client import getPage
@@ -81,27 +80,21 @@ class Storage(PythonDataSourcePlugin):
                     base_url
                     )
 
-            login_params = urllib.urlencode({
-                'action': 'login',
-                'view': 'login',
-                'username': username,
-                'password': password,
-                # 1.34+ requires OPT_USE_LEGACY_API_AUTH
-                'stateful': 1,
-                })
-            login_url = '{0}index.php?{1}'.format(base_url, login_params)
             api_url = '{0}api/'.format(base_url)
+            login_url = '{0}host/login.json?user={1}'.format(api_url, username)
+            login_url += '&pass={0}&stateful=1'.format(password)
 
             cookies = dict()
             try:
                 # Attempt login
-                login_response = yield getPage(
+                response = yield getPage(
                     login_url,
                     method='POST',
                     cookies=cookies
                     )
 
-                if 'Invalid username or password' in login_response:
+                if ('Login denied' in response
+                        or '"success": false' in response):
                     LOG.error(
                         '%s: ZoneMinder login credentials invalid',
                         config.id,
@@ -131,41 +124,22 @@ class Storage(PythonDataSourcePlugin):
                         datasource.component
                         )
 
-                # Versions
+                # Storage
+                storage = list()
                 response = yield getPage(
-                    api_url + 'host/getVersion.json',
+                    api_url + 'storage.json',
                     method='GET',
                     cookies=cookies
                     )
-                versions = zmUtil.dissect_versions(json.loads(response))
+                storage = json.loads(response).get('storage', list())
 
-                storage = list()
-                # 1.32+ required for storage.json
-                if (versions['daemon']['major'] >= 1
-                        and versions['daemon']['minor'] >= 32):
-                    # Storage
-                    response = yield getPage(
-                        api_url + 'storage.json',
-                        method='GET',
-                        cookies=cookies
-                        )
-                    storage = json.loads(response).get('storage', list())
+                # API logout
+                yield getPage(
+                    api_url + 'host/logout.json',
+                    method='GET',
+                    cookies=cookies
+                    )
 
-                    # API logout
-                    yield getPage(
-                        api_url + 'host/logout.json',
-                        method='GET',
-                        cookies=cookies
-                        )
-
-                else:
-                    # Browser-style log out
-                    # Doesn't work with 1.34.21
-                    yield getPage(
-                        base_url + 'index.php?action=logout',
-                        method='POST',
-                        cookies=cookies
-                        )
             except Exception:
                 LOG.exception('%s: failed to get store data', config.id)
                 continue

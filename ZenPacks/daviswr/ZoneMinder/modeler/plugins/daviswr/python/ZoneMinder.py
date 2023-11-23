@@ -2,7 +2,6 @@
 
 import json
 import re
-import urllib
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.web.client import getPage
@@ -64,17 +63,12 @@ class ZoneMinder(PythonPlugin):
             returnValue(None)
 
         log.info('%s: using base ZoneMinder URL %s', device.id, base_url)
-        # Pre-1.32 compatibility
-        login_params = urllib.urlencode({
-            'action': 'login',
-            'view': 'login',
-            'username': username,
-            'password': password,
-            # 1.34+ requires OPT_USE_LEGACY_API_AUTH
-            'stateful': 1,
-            })
-        login_url = '{0}index.php?{1}'.format(base_url, login_params)
         api_url = '{0}api/'.format(base_url)
+        login_url = '{0}host/login.json?user={1}&pass={2}&stateful=1'.format(
+            api_url,
+            username,
+            password
+            )
         # log.debug('%s: ZoneMinder URL:%s', device.id, login_url)
 
         cookies = dict()
@@ -82,14 +76,17 @@ class ZoneMinder(PythonPlugin):
             # Attempt login
             response = yield getPage(login_url, method='POST', cookies=cookies)
 
-            if 'Invalid username or password' in response:
+            if 'Login denied' in response or '"success": false' in response:
                 log.error(
                     '%s: ZoneMinder login credentials invalid',
                     device.id
                     )
                 returnValue(None)
             elif not cookies:
-                log.error('%s: No cookies received', device.id)
+                log.error(
+                    '%s: No cookies received, enable OPT_USE_LEGACY_API_AUTH',
+                    device.id
+                    )
                 returnValue(None)
 
             log.debug('%s: ZoneMinder cookies\n%s', device.id, cookies)
@@ -152,39 +149,22 @@ class ZoneMinder(PythonPlugin):
             #     )
             # output.update(json.loads(response))
 
-            # Version-specific API calls
-            # 1.32+ required for storage.json
-            if (versions['daemon']['major'] >= 1
-                    and versions['daemon']['minor'] >= 32):
-                # Storage
-                log.debug('%s: ZoneMinder URL: storage.json', device.id)
-                response = yield getPage(
-                    api_url + 'storage.json',
-                    method='GET',
-                    cookies=cookies
-                    )
-                output.update(json.loads(response))
+            # Storage
+            log.debug('%s: ZoneMinder URL: storage.json', device.id)
+            response = yield getPage(
+                api_url + 'storage.json',
+                method='GET',
+                cookies=cookies
+                )
+            output.update(json.loads(response))
 
-                # API logout
-                log.debug('%s: ZoneMinder URL: host/logout.json', device.id)
-                yield getPage(
-                    api_url + 'host/logout.json',
-                    method='GET',
-                    cookies=cookies
-                    )
-
-            else:
-                # Browser-style log out
-                # Doesn't work with 1.34.21
-                log.debug(
-                    '%s: ZoneMinder URL: index.php?action=logout',
-                    device.id
-                    )
-                yield getPage(
-                    base_url + 'index.php?action=logout',
-                    method='POST',
-                    cookies=cookies
-                    )
+            # API logout
+            log.debug('%s: ZoneMinder URL: host/logout.json', device.id)
+            yield getPage(
+                api_url + 'host/logout.json',
+                method='GET',
+                cookies=cookies
+                )
 
         except Exception, e:
             log.error('%s: %s', device.id, e)
@@ -249,8 +229,8 @@ class ZoneMinder(PythonPlugin):
 
         for item in results.get('monitors', list()):
             monitor = item['Monitor']
-            monitor_id = monitor.get('Id') \
-                or (int(monitor.get('Sequence')) + 1)
+            monitor_id = (monitor.get('Id')
+                          or (int(monitor.get('Sequence')) + 1))
             monitor_name = monitor.get('Name') or monitor_id
             monitor['id'] = self.prepId('zmMonitor{0}'.format(monitor_id))
             monitor['title'] = monitor_name
@@ -407,9 +387,8 @@ class ZoneMinder(PythonPlugin):
                 ]
 
             for key in floats:
-                monitor[key] = float(monitor.get(key, 0.0)) \
-                    if monitor.get(key, None) \
-                    else 0.0
+                monitor[key] = (float(monitor.get(key, 0.0))
+                                if monitor.get(key, None) else 0.0)
 
             booleans = [
                 'Enabled',
